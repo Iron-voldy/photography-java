@@ -83,6 +83,48 @@
         .video-gallery .card:hover .card-img-overlay {
             opacity: 1;
         }
+
+        /* Fix for video modal */
+        .modal-content.bg-dark {
+            background-color: #121212 !important;
+        }
+
+        .youtube-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            overflow: hidden;
+        }
+
+        .youtube-container img {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .youtube-container .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 68px;
+            height: 48px;
+            background-color: #212121;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .youtube-container .play-button::before {
+            content: "";
+            border-style: solid;
+            border-width: 12px 0 12px 20px;
+            border-color: transparent transparent transparent white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-40%, -50%);
+        }
     </style>
 </head>
 <body>
@@ -213,16 +255,54 @@
     <jsp:include page="/includes/footer.jsp" />
 
     <!-- Video Modals -->
+    <!-- Video Modal 1 -->
     <div class="modal fade" id="videoModal1" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content bg-dark">
                 <div class="modal-header border-0">
+                    <h5 class="modal-title text-white">Wedding Video</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="ratio ratio-16x9">
-                        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                                title="Wedding Video" allowfullscreen></iframe>
+                    <div class="youtube-container">
+                        <img src="https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" alt="Wedding Video Thumbnail">
+                        <div class="play-button" onclick="loadYoutubeVideo(this, 'dQw4w9WgXcQ')"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Modal 2 -->
+    <div class="modal fade" id="videoModal2" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title text-white">Corporate Event Video</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="youtube-container">
+                        <img src="https://img.youtube.com/vi/C0DPdy98e4c/maxresdefault.jpg" alt="Corporate Video Thumbnail">
+                        <div class="play-button" onclick="loadYoutubeVideo(this, 'C0DPdy98e4c')"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Modal 3 -->
+    <div class="modal fade" id="videoModal3" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title text-white">Drone Videography</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="youtube-container">
+                        <img src="https://img.youtube.com/vi/hI4nrLxnW1A/maxresdefault.jpg" alt="Drone Video Thumbnail">
+                        <div class="play-button" onclick="loadYoutubeVideo(this, 'hI4nrLxnW1A')"></div>
                     </div>
                 </div>
             </div>
@@ -240,6 +320,42 @@
         AOS.init({
             duration: 1000,
             once: true
+        });
+
+        // YouTube video loading function
+        function loadYoutubeVideo(element, videoId) {
+            const container = element.parentNode;
+            const iframe = document.createElement('iframe');
+
+            iframe.setAttribute('width', '100%');
+            iframe.setAttribute('height', '100%');
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('allowfullscreen', '1');
+            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+
+            // Use privacy-enhanced mode URL
+            iframe.setAttribute('src', `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`);
+
+            // Replace the container content with iframe
+            container.innerHTML = '';
+            container.appendChild(iframe);
+        }
+
+        // Reset video modals on close
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('hidden.bs.modal', event => {
+                const modalBody = modal.querySelector('.modal-body');
+                const videoId = modalBody.querySelector('iframe')?.src.split('/').pop().split('?')[0] ||
+                                modalBody.querySelector('.play-button')?.getAttribute('onclick').match(/'([^']+)'/)[1];
+
+                if (videoId) {
+                    const container = modalBody.querySelector('.youtube-container');
+                    container.innerHTML = `
+                        <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" alt="Video Thumbnail">
+                        <div class="play-button" onclick="loadYoutubeVideo(this, '${videoId}')"></div>
+                    `;
+                }
+            });
         });
     </script>
 </body>

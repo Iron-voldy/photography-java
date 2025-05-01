@@ -66,7 +66,7 @@
                         </c:when>
                         <c:otherwise>
                             <!-- User is not logged in -->
-                            <li class="nav-item">
+                            <li class="nav-item me-2">
                                   <a href="${pageContext.request.contextPath}/login" class="btn btn-primary">Login</a>
                             </li>
                             <li class="nav-item">
@@ -82,3 +82,57 @@
 
 <!-- Add spacing below the fixed header -->
 <div class="header-space" style="margin-top: 76px;"></div>
+
+<!-- Ensure proper initialization of Bootstrap dropdowns -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Manual initialization of dropdown menus
+    var dropdownToggleElements = document.querySelectorAll('.dropdown-toggle');
+
+    dropdownToggleElements.forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Get the parent dropdown
+            var parent = this.closest('.dropdown');
+            if (parent) {
+                // Toggle the 'show' class on dropdown menu
+                var menu = parent.querySelector('.dropdown-menu');
+                if (menu) {
+                    if (menu.classList.contains('show')) {
+                        menu.classList.remove('show');
+                        this.setAttribute('aria-expanded', 'false');
+                    } else {
+                        // Close all other dropdowns first
+                        document.querySelectorAll('.dropdown-menu.show').forEach(function(openMenu) {
+                            openMenu.classList.remove('show');
+                            var toggle = openMenu.previousElementSibling;
+                            if (toggle && toggle.classList.contains('dropdown-toggle')) {
+                                toggle.setAttribute('aria-expanded', 'false');
+                            }
+                        });
+
+                        // Show this dropdown
+                        menu.classList.add('show');
+                        this.setAttribute('aria-expanded', 'true');
+                    }
+                }
+            }
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
+                menu.classList.remove('show');
+                var toggle = menu.previousElementSibling;
+                if (toggle && toggle.classList.contains('dropdown-toggle')) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+    });
+});
+</script>
