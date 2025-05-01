@@ -147,12 +147,9 @@
                         <label for="specialty" class="form-label">Specialty</label>
                         <select class="form-select" id="specialty" name="specialty">
                             <option value="">All Specialties</option>
-                            <option value="WEDDING" ${param.specialty == 'WEDDING' ? 'selected' : ''}>Wedding</option>
-                            <option value="PORTRAIT" ${param.specialty == 'PORTRAIT' ? 'selected' : ''}>Portrait</option>
-                            <option value="EVENT" ${param.specialty == 'EVENT' ? 'selected' : ''}>Event</option>
-                            <option value="FAMILY" ${param.specialty == 'FAMILY' ? 'selected' : ''}>Family</option>
-                            <option value="CORPORATE" ${param.specialty == 'CORPORATE' ? 'selected' : ''}>Corporate</option>
-                            <option value="PRODUCT" ${param.specialty == 'PRODUCT' ? 'selected' : ''}>Product</option>
+                            <c:forEach var="specialty" items="${specialties}">
+                                <option value="${specialty}" ${param.specialty == specialty ? 'selected' : ''}>${specialty}</option>
+                            </c:forEach>
                         </select>
                     </div>
 
@@ -177,11 +174,14 @@
                             <option value="experience-desc" ${param.sortBy == 'experience-desc' ? 'selected' : ''}>
                                 Most Experienced
                             </option>
+                            <option value="name-asc" ${param.sortBy == 'name-asc' ? 'selected' : ''}>
+                                Name: A to Z
+                            </option>
                         </select>
                     </div>
 
                     <div class="col-12 d-flex justify-content-end gap-2">
-                        <a href="${pageContext.request.contextPath}/photographer/photographer_list.jsp"
+                        <a href="${pageContext.request.contextPath}/photographer/list"
                            class="btn btn-outline-secondary px-4">
                             <i class="bi bi-x-lg me-2"></i>Clear
                         </a>
@@ -195,263 +195,227 @@
 
         <!-- Photographers Grid -->
         <div class="row g-4 mb-4">
-            <!-- Photographer 1 -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card photographer-card">
-                    <img src="https://images.unsplash.com/photo-1531891437562-4301cf35b7e4"
-                         class="card-img-top photographer-thumbnail" alt="John's Photography">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">John's Photography</h5>
-                            <span class="badge bg-success">Available</span>
-                        </div>
-                        <p class="location-badge">
-                            <i class="bi bi-geo-alt me-1"></i>New York, NY
-                        </p>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rating-stars me-2">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-half"></i>
+            <c:choose>
+                <c:when test="${not empty photographers}">
+                    <c:forEach var="photographer" items="${photographers}">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card photographer-card">
+                                <c:choose>
+                                    <c:when test="${not empty photographer.portfolioImageUrls}">
+                                        <img src="${photographer.portfolioImageUrls[0]}" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
+                                    </c:when>
+                                    <c:otherwise>
+                                        <img src="https://images.unsplash.com/photo-1531891437562-4301cf35b7e4" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
+                                    </c:otherwise>
+                                </c:choose>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">${photographer.businessName}</h5>
+                                        <c:choose>
+                                            <c:when test="${photographer.isPhotographerAvailable}">
+                                                <span class="badge bg-success">Available</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="badge bg-warning text-dark">Limited</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </div>
+                                    <p class="location-badge">
+                                        <i class="bi bi-geo-alt me-1"></i>${photographer.location}
+                                    </p>
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="rating-stars me-2">
+                                            <c:forEach begin="1" end="5" varStatus="star">
+                                                <c:choose>
+                                                    <c:when test="${star.index <= photographer.rating}">
+                                                        <i class="bi bi-star-fill"></i>
+                                                    </c:when>
+                                                    <c:when test="${star.index > photographer.rating && star.index < photographer.rating + 1}">
+                                                        <i class="bi bi-star-half"></i>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <i class="bi bi-star"></i>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </c:forEach>
+                                        </div>
+                                        <span>${photographer.rating} (${photographer.reviewCount} reviews)</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <c:forEach var="specialty" items="${photographer.specialties}">
+                                            <span class="badge badge-specialty">${specialty}</span>
+                                        </c:forEach>
+                                    </div>
+                                    <p class="card-text text-muted small mb-3">
+                                        ${fn:substring(photographer.biography, 0, 100)}...
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-primary">From $${photographer.basePrice}/hr</span>
+                                        <a href="${pageContext.request.contextPath}/photographer/profile?id=${photographer.photographerId}"
+                                           class="btn btn-outline-primary">View Profile</a>
+                                    </div>
+                                </div>
                             </div>
-                            <span>4.7 (126 reviews)</span>
                         </div>
-                        <div class="mb-3">
-                            <span class="badge badge-specialty">Wedding</span>
-                            <span class="badge badge-specialty">Portrait</span>
-                            <span class="badge badge-specialty">Event</span>
-                        </div>
-                        <p class="card-text text-muted small mb-3">
-                            Specializing in candid moments with a modern style. Over 10 years of experience capturing weddings and special events.
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">From $250/hr</span>
-                            <a href="${pageContext.request.contextPath}/photographer/photographer_details.jsp?id=p456"
-                               class="btn btn-outline-primary">View Profile</a>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <!-- Photographer 1 (Example data - will be replaced by actual database data) -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card photographer-card">
+                            <img src="https://images.unsplash.com/photo-1531891437562-4301cf35b7e4"
+                                 class="card-img-top photographer-thumbnail" alt="John's Photography">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">John's Photography</h5>
+                                    <span class="badge bg-success">Available</span>
+                                </div>
+                                <p class="location-badge">
+                                    <i class="bi bi-geo-alt me-1"></i>New York, NY
+                                </p>
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rating-stars me-2">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-half"></i>
+                                    </div>
+                                    <span>4.7 (126 reviews)</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge badge-specialty">Wedding</span>
+                                    <span class="badge badge-specialty">Portrait</span>
+                                    <span class="badge badge-specialty">Event</span>
+                                </div>
+                                <p class="card-text text-muted small mb-3">
+                                    Specializing in candid moments with a modern style. Over 10 years of experience capturing weddings and special events.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-primary">From $250/hr</span>
+                                    <a href="${pageContext.request.contextPath}/photographer/profile?id=p456"
+                                       class="btn btn-outline-primary">View Profile</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Photographer 2 -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card photographer-card">
-                    <img src="https://images.unsplash.com/photo-1521038199265-bc482db0f923"
-                         class="card-img-top photographer-thumbnail" alt="Nature Shots">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">Nature Shots</h5>
-                            <span class="badge bg-success">Available</span>
-                        </div>
-                        <p class="location-badge">
-                            <i class="bi bi-geo-alt me-1"></i>Seattle, WA
-                        </p>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rating-stars me-2">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star"></i>
+                    <!-- Photographer 2 (Example data) -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card photographer-card">
+                            <img src="https://images.unsplash.com/photo-1521038199265-bc482db0f923"
+                                 class="card-img-top photographer-thumbnail" alt="Nature Shots">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">Nature Shots</h5>
+                                    <span class="badge bg-success">Available</span>
+                                </div>
+                                <p class="location-badge">
+                                    <i class="bi bi-geo-alt me-1"></i>Seattle, WA
+                                </p>
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rating-stars me-2">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star"></i>
+                                    </div>
+                                    <span>4.2 (52 reviews)</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge badge-specialty">Landscape</span>
+                                    <span class="badge badge-specialty">Wildlife</span>
+                                    <span class="badge badge-specialty">Family</span>
+                                </div>
+                                <p class="card-text text-muted small mb-3">
+                                    Capturing the beauty of nature and families in natural settings. Specializing in outdoor photography with natural light.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-primary">From $180/hr</span>
+                                    <a href="${pageContext.request.contextPath}/photographer/profile?id=p222"
+                                       class="btn btn-outline-primary">View Profile</a>
+                                </div>
                             </div>
-                            <span>4.2 (52 reviews)</span>
-                        </div>
-                        <div class="mb-3">
-                            <span class="badge badge-specialty">Landscape</span>
-                            <span class="badge badge-specialty">Wildlife</span>
-                            <span class="badge badge-specialty">Family</span>
-                        </div>
-                        <p class="card-text text-muted small mb-3">
-                            Capturing the beauty of nature and families in natural settings. Specializing in outdoor photography with natural light.
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">From $180/hr</span>
-                            <a href="${pageContext.request.contextPath}/photographer/photographer_details.jsp?id=p222"
-                               class="btn btn-outline-primary">View Profile</a>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Photographer 3 -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card photographer-card">
-                    <img src="https://images.unsplash.com/photo-1595126739114-f9de2a949d93"
-                         class="card-img-top photographer-thumbnail" alt="Studio Perfect">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">Studio Perfect</h5>
-                            <span class="badge bg-success">Available</span>
-                        </div>
-                        <p class="location-badge">
-                            <i class="bi bi-geo-alt me-1"></i>Los Angeles, CA
-                        </p>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rating-stars me-2">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
+                    <!-- Photographer 3 (Example data) -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card photographer-card">
+                            <img src="https://images.unsplash.com/photo-1595126739114-f9de2a949d93"
+                                 class="card-img-top photographer-thumbnail" alt="Studio Perfect">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">Studio Perfect</h5>
+                                    <span class="badge bg-success">Available</span>
+                                </div>
+                                <p class="location-badge">
+                                    <i class="bi bi-geo-alt me-1"></i>Los Angeles, CA
+                                </p>
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rating-stars me-2">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <span>5.0 (93 reviews)</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge badge-specialty">Portrait</span>
+                                    <span class="badge badge-specialty">Corporate</span>
+                                    <span class="badge badge-specialty">Product</span>
+                                </div>
+                                <p class="card-text text-muted small mb-3">
+                                    Professional studio-based photography for corporate clients, products, and model portfolios. High-end retouching available.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-primary">From $300/hr</span>
+                                    <a href="${pageContext.request.contextPath}/photographer/profile?id=p789"
+                                       class="btn btn-outline-primary">View Profile</a>
+                                </div>
                             </div>
-                            <span>5.0 (93 reviews)</span>
-                        </div>
-                        <div class="mb-3">
-                            <span class="badge badge-specialty">Portrait</span>
-                            <span class="badge badge-specialty">Corporate</span>
-                            <span class="badge badge-specialty">Product</span>
-                        </div>
-                        <p class="card-text text-muted small mb-3">
-                            Professional studio-based photography for corporate clients, products, and model portfolios. High-end retouching available.
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">From $300/hr</span>
-                            <a href="${pageContext.request.contextPath}/photographer/photographer_details.jsp?id=p789"
-                               class="btn btn-outline-primary">View Profile</a>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Photographer 4 -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card photographer-card">
-                    <img src="https://images.unsplash.com/photo-1587614298171-a01562f6ef22"
-                         class="card-img-top photographer-thumbnail" alt="Wedding Dream">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">Wedding Dream</h5>
-                            <span class="badge bg-success">Available</span>
-                        </div>
-                        <p class="location-badge">
-                            <i class="bi bi-geo-alt me-1"></i>Chicago, IL
-                        </p>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rating-stars me-2">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-half"></i>
-                            </div>
-                            <span>4.8 (156 reviews)</span>
-                        </div>
-                        <div class="mb-3">
-                            <span class="badge badge-specialty">Wedding</span>
-                            <span class="badge badge-specialty">Engagement</span>
-                            <span class="badge badge-specialty">Event</span>
-                        </div>
-                        <p class="card-text text-muted small mb-3">
-                            Dedicated to capturing your wedding journey from engagement to reception. Cinematic and timeless style with attention to detail.
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">From $350/hr</span>
-                            <a href="${pageContext.request.contextPath}/photographer/photographer_details.jsp?id=p333"
-                               class="btn btn-outline-primary">View Profile</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Photographer 5 -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card photographer-card">
-                    <img src="https://images.unsplash.com/photo-1587614381634-068e9bd10c29"
-                         class="card-img-top photographer-thumbnail" alt="Family Moments">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">Family Moments</h5>
-                            <span class="badge bg-success">Available</span>
-                        </div>
-                        <p class="location-badge">
-                            <i class="bi bi-geo-alt me-1"></i>Atlanta, GA
-                        </p>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rating-stars me-2">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star"></i>
-                            </div>
-                            <span>4.0 (78 reviews)</span>
-                        </div>
-                        <div class="mb-3">
-                            <span class="badge badge-specialty">Family</span>
-                            <span class="badge badge-specialty">Children</span>
-                            <span class="badge badge-specialty">Maternity</span>
-                        </div>
-                        <p class="card-text text-muted small mb-3">
-                            Specializing in family photography from maternity to newborn and beyond. Creating heartwarming, authentic family portraits.
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">From $200/hr</span>
-                            <a href="${pageContext.request.contextPath}/photographer/photographer_details.jsp?id=p444"
-                               class="btn btn-outline-primary">View Profile</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Photographer 6 -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card photographer-card">
-                    <img src="https://images.unsplash.com/photo-1600180583258-6d9b0c7b903b"
-                         class="card-img-top photographer-thumbnail" alt="Corporate Image">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">Corporate Image</h5>
-                            <span class="badge bg-warning text-dark">Limited</span>
-                        </div>
-                        <p class="location-badge">
-                            <i class="bi bi-geo-alt me-1"></i>San Francisco, CA
-                        </p>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rating-stars me-2">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-half"></i>
-                            </div>
-                            <span>4.6 (103 reviews)</span>
-                        </div>
-                        <div class="mb-3">
-                            <span class="badge badge-specialty">Corporate</span>
-                            <span class="badge badge-specialty">Headshots</span>
-                            <span class="badge badge-specialty">Product</span>
-                        </div>
-                        <p class="card-text text-muted small mb-3">
-                            Corporate photography for businesses of all sizes. Specializing in professional headshots, corporate events, and product photography.
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary">From $280/hr</span>
-                            <a href="${pageContext.request.contextPath}/photographer/photographer_details.jsp?id=p555"
-                               class="btn btn-outline-primary">View Profile</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </c:otherwise>
+            </c:choose>
         </div>
 
         <!-- Pagination -->
         <nav aria-label="Photographer search results pages">
             <ul class="pagination justify-content-center">
-                <li class="page-item disabled">
-                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                <li class="page-item">
-                    <a class="page-link" href="#">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
+                <c:if test="${currentPage > 1}">
+                    <li class="page-item">
+                        <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage - 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                </c:if>
+
+                <c:forEach begin="1" end="${totalPages}" var="i">
+                    <c:choose>
+                        <c:when test="${currentPage == i}">
+                            <li class="page-item active">
+                                <span class="page-link">${i}</span>
+                            </li>
+                        </c:when>
+                        <c:otherwise>
+                            <li class="page-item">
+                                <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${i}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">${i}</a>
+                            </li>
+                        </c:otherwise>
+                    </c:choose>
+                </c:forEach>
+
+                <c:if test="${currentPage < totalPages}">
+                    <li class="page-item">
+                        <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage + 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </c:if>
             </ul>
         </nav>
 
@@ -505,7 +469,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Quick filter selection handling
         document.addEventListener('DOMContentLoaded', function() {
             // Handle clear button
             document.querySelector('.btn-outline-secondary').addEventListener('click', function(e) {
