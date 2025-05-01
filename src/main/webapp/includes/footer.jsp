@@ -2,118 +2,95 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <!-- Footer -->
-<footer class="footer bg-dark text-light mt-5 py-5">
+<footer class="bg-dark text-white py-5 mt-5">
     <div class="container">
-        <div class="row">
-            <!-- Logo and About -->
-            <div class="col-lg-4 mb-4 mb-lg-0">
-                <div class="d-flex align-items-center mb-3">
-                    <img src="${pageContext.request.contextPath}/assets/images/logo.png" alt="SnapEvent" width="40" height="40" class="me-2">
-                    <h5 class="m-0">SnapEvent</h5>
-                </div>
-                <p class="text-light-emphasis">
-                    Capturing your special moments with professional photography services.
-                    Whether it's a wedding, corporate event, or casual photoshoot, we connect
-                    you with the perfect photographer for your occasion.
-                </p>
-                <div class="social-icons">
-                    <a href="#" class="text-light me-3"><i class="bi bi-facebook fs-5"></i></a>
-                    <a href="#" class="text-light me-3"><i class="bi bi-instagram fs-5"></i></a>
-                    <a href="#" class="text-light me-3"><i class="bi bi-twitter fs-5"></i></a>
-                    <a href="#" class="text-light"><i class="bi bi-linkedin fs-5"></i></a>
+        <div class="row g-4">
+            <!-- Company Info -->
+            <div class="col-lg-4">
+                <h5 class="mb-4"><i class="bi bi-camera me-2"></i>SnapEvent</h5>
+                <p class="mb-3">Professional photography services for all your special moments. We connect clients with talented photographers for weddings, events, portraits, and more.</p>
+                <div class="d-flex gap-3 social-icons">
+                    <a href="#" class="text-white"><i class="bi bi-facebook fs-5"></i></a>
+                    <a href="#" class="text-white"><i class="bi bi-instagram fs-5"></i></a>
+                    <a href="#" class="text-white"><i class="bi bi-twitter fs-5"></i></a>
+                    <a href="#" class="text-white"><i class="bi bi-linkedin fs-5"></i></a>
                 </div>
             </div>
 
             <!-- Quick Links -->
-            <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
-                <h5 class="text-uppercase mb-4">Quick Links</h5>
+            <div class="col-lg-2 col-md-4">
+                <h6 class="mb-3">Quick Links</h6>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/" class="text-light-emphasis text-decoration-none">Home</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/about.jsp" class="text-light-emphasis text-decoration-none">About Us</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services.jsp" class="text-light-emphasis text-decoration-none">Services</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/gallery/gallery_list.jsp" class="text-light-emphasis text-decoration-none">Galleries</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/contact.jsp" class="text-light-emphasis text-decoration-none">Contact</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/" class="text-decoration-none text-white-50 hover-white">Home</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/photographer/photographer_list.jsp" class="text-decoration-none text-white-50 hover-white">Photographers</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/gallery/gallery_list.jsp" class="text-decoration-none text-white-50 hover-white">Galleries</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/about.jsp" class="text-decoration-none text-white-50 hover-white">About Us</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/contact.jsp" class="text-decoration-none text-white-50 hover-white">Contact</a></li>
                 </ul>
             </div>
 
             <!-- Services -->
-            <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
-                <h5 class="text-uppercase mb-4">Services</h5>
+            <div class="col-lg-2 col-md-4">
+                <h6 class="mb-3">Services</h6>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/wedding.jsp" class="text-light-emphasis text-decoration-none">Wedding Photography</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/corporate.jsp" class="text-light-emphasis text-decoration-none">Corporate Events</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/portrait.jsp" class="text-light-emphasis text-decoration-none">Portrait Sessions</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/family.jsp" class="text-light-emphasis text-decoration-none">Family Photography</a></li>
-                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/special.jsp" class="text-light-emphasis text-decoration-none">Special Occasions</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/wedding.jsp" class="text-decoration-none text-white-50 hover-white">Wedding Photography</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/portrait.jsp" class="text-decoration-none text-white-50 hover-white">Portrait Sessions</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/event.jsp" class="text-decoration-none text-white-50 hover-white">Event Coverage</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/corporate.jsp" class="text-decoration-none text-white-50 hover-white">Corporate Photography</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/services/family.jsp" class="text-decoration-none text-white-50 hover-white">Family Sessions</a></li>
                 </ul>
             </div>
 
-            <!-- Contact Info -->
-            <div class="col-lg-4">
-                <h5 class="text-uppercase mb-4">Contact Us</h5>
+            <!-- Support -->
+            <div class="col-lg-2 col-md-4">
+                <h6 class="mb-3">Support</h6>
                 <ul class="list-unstyled">
-                    <li class="mb-3">
-                        <i class="bi bi-geo-alt-fill text-primary me-2"></i>
-                        123 Photography Lane, Creative City, PC 12345
-                    </li>
-                    <li class="mb-3">
-                        <i class="bi bi-telephone-fill text-primary me-2"></i>
-                        +1 (555) 123-4567
-                    </li>
-                    <li class="mb-3">
-                        <i class="bi bi-envelope-fill text-primary me-2"></i>
-                        info@snapevent.com
-                    </li>
-                    <li class="mb-3">
-                        <i class="bi bi-clock-fill text-primary me-2"></i>
-                        Monday - Friday: 9:00 AM - 6:00 PM
-                    </li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/help/faq.jsp" class="text-decoration-none text-white-50 hover-white">FAQ</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/help/pricing.jsp" class="text-decoration-none text-white-50 hover-white">Pricing</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/help/terms.jsp" class="text-decoration-none text-white-50 hover-white">Terms of Service</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/help/privacy.jsp" class="text-decoration-none text-white-50 hover-white">Privacy Policy</a></li>
+                    <li class="mb-2"><a href="${pageContext.request.contextPath}/help/contact.jsp" class="text-decoration-none text-white-50 hover-white">Contact Support</a></li>
                 </ul>
+            </div>
 
-                <!-- Newsletter Signup -->
-                <div class="mt-4">
-                    <h6>Subscribe to our newsletter</h6>
-                    <form class="d-flex">
-                        <input type="email" class="form-control form-control-sm me-2" placeholder="Your email">
-                        <button type="submit" class="btn btn-outline-light btn-sm">Subscribe</button>
-                    </form>
-                </div>
+            <!-- Contact -->
+            <div class="col-lg-2 col-md-4">
+                <h6 class="mb-3">Contact Us</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="bi bi-geo-alt me-2"></i>123 Photography St, City</li>
+                    <li class="mb-2"><i class="bi bi-telephone me-2"></i>(123) 456-7890</li>
+                    <li class="mb-2"><i class="bi bi-envelope me-2"></i>info@snapevent.com</li>
+                </ul>
             </div>
         </div>
 
+        <hr class="my-4 bg-light">
+
         <!-- Copyright -->
-        <div class="row mt-4 pt-4 border-top border-secondary">
+        <div class="row">
             <div class="col-md-6 text-center text-md-start">
-                <p class="small text-light-emphasis">© 2023 SnapEvent. All rights reserved.</p>
+                <p class="mb-0">&copy; 2025 SnapEvent. All rights reserved.</p>
             </div>
             <div class="col-md-6 text-center text-md-end">
-                <ul class="list-inline small mb-0">
-                    <li class="list-inline-item"><a href="${pageContext.request.contextPath}/privacy.jsp" class="text-light-emphasis text-decoration-none">Privacy Policy</a></li>
-                    <li class="list-inline-item"><span class="text-muted mx-2">|</span></li>
-                    <li class="list-inline-item"><a href="${pageContext.request.contextPath}/terms.jsp" class="text-light-emphasis text-decoration-none">Terms of Service</a></li>
-                </ul>
+                <p class="mb-0">Designed and developed by <a href="#" class="text-white">Your Team Name</a></p>
             </div>
         </div>
     </div>
 </footer>
 
-<!-- Toast container for notifications -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            <strong class="me-auto">Notification</strong>
-            <small>Just now</small>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body">
-            <!-- Message will be inserted here -->
-        </div>
-    </div>
-</div>
+<!-- Custom CSS for hover effects -->
+<style>
+    .hover-white:hover {
+        color: white !important;
+        transition: color 0.3s ease;
+    }
 
-<!-- Bootstrap Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    .social-icons a {
+        transition: transform 0.3s ease;
+        display: inline-block;
+    }
 
-<!-- Custom JavaScript -->
-<script src="${pageContext.request.contextPath}/assets/js/main.js"></script>
+    .social-icons a:hover {
+        transform: translateY(-3px);
+    }
+</style>
