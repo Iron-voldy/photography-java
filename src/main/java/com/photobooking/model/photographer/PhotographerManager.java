@@ -1,0 +1,369 @@
+package com.photobooking.model.photographer;
+
+import com.photobooking.util.FileHandler;
+import com.photobooking.model.booking.Booking;
+import com.photobooking.model.booking.BookingManager;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Manages photographer-related operations for the Event Photography System
+ */
+public class PhotographerManager {
+    private static final String PHOTOGRAPHER_FILE = "photographers.txt";
+    private List<Photographer> photographers;
+
+    /**
+     * Constructor initializes the manager and loads photographers
+     */
+    public PhotographerManager() {
+        this.photographers = loadPhotographers();
+    }
+
+    /**
+     * Load photographers from file
+     * @return List of photographers
+     */
+    private List<Photographer> loadPhotographers() {
+        List<String> lines = FileHandler.readLines(PHOTOGRAPHER_FILE);
+        List<Photographer> loadedPhotographers = new ArrayList<>();
+
+        for (String line : lines) {
+            if (!line.trim().isEmpty()) {
+                Photographer photographer = Photographer.fromFileString(line);
+                if (photographer != null) {
+                    loadedPhotographers.add(photographer);
+                }
+            }
+        }
+
+        return loadedPhotographers;
+    }
+
+    /**
+     * Save all photographers to file
+     * @return true if successful, false otherwise
+     */
+    private boolean savePhotographers() {
+        try {
+            // Delete existing file content
+            FileHandler.deleteFile(PHOTOGRAPHER_FILE);
+
+            // Write each photographer to file
+            for (Photographer photographer : photographers) {
+                FileHandler.appendLine(PHOTOGRAPHER_FILE, photographer.toFileString());
+            }
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error saving photographers: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Add a new photographer
+     * @param photographer The photographer to add
+     * @return true if successful, false otherwise
+     */
+    public boolean addPhotographer(Photographer photographer) {
+        if (photographer == null || photographer.getUserId() == null) {
+            return false;
+        }
+
+        // Check if photographer with same user ID already exists
+        if (getPhotographerByUserId(photographer.getUserId()) != null) {
+            return false; // Photographer already exists
+        }
+
+        photographers.add(photographer);
+        return savePhotographers();
+    }
+
+    /**
+     * Get photographer by ID
+     * @param photographerId The photographer ID
+     * @return The photographer or null if not found
+     */
+    public Photographer getPhotographerById(String photographerId) {
+        if (photographerId == null) return null;
+
+        return photographers.stream()
+                .filter(p -> p.getPhotographerId().equals(photographerId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Get photographer by user ID
+     * @param userId The user ID
+     * @return The photographer or null if not found
+     */
+    public Photographer getPhotographerByUserId(String userId) {
+        if (userId == null) return null;
+
+        return photographers.stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Update an existing photographer
+     * @param updatedPhotographer The updated photographer
+     * @return true if successful, false otherwise
+     */
+    public boolean updatePhotographer(Photographer updatedPhotographer) {
+        if (updatedPhotographer == null || updatedPhotographer.getPhotographerId() == null) {
+            return false;
+        }
+
+        for (int i = 0; i < photographers.size(); i++) {
+            if (photographers.get(i).getPhotographerId().equals(updatedPhotographer.getPhotographerId())) {
+                photographers.set(i, updatedPhotographer);
+                return savePhotographers();
+            }
+        }
+
+        return false; // Photographer not found
+    }
+
+    /**
+     * Delete a photographer
+     * @param photographerId The photographer ID
+     * @return true if successful, false otherwise
+     */
+    public boolean deletePhotographer(String photographerId) {
+        if (photographerId == null) {
+            return false;
+        }
+
+        boolean removed = photographers.removeIf(p -> p.getPhotographerId().equals(photographerId));
+        if (removed) {
+            return savePhotographers();
+        }
+
+        return false; // Photographer not found
+    }
+
+    /**
+     * Get all photographers
+     * @return List of all photographers
+     */
+    public List<Photographer> getAllPhotographers() {
+        return new ArrayList<>(photographers);
+    }
+
+    /**
+     * Get photographers by specialty
+     * @param specialty The specialty to filter by
+     * @return List of photographers with the given specialty
+     */
+    public List<Photographer> getPhotographersBySpecialty(String specialty) {
+        if (specialty == null) return new ArrayList<>();
+
+        return photographers.stream()
+                .filter(p -> p.getSpecialties().contains(specialty))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get photographers by location
+     * @param location The location to filter by
+     * @return List of photographers in the given location
+     */
+    public List<Photographer> getPhotographersByLocation(String location) {
+        if (location == null) return new ArrayList<>();
+
+        return photographers.stream()
+                .filter(p -> p.getLocation() != null && p.getLocation().toLowerCase().contains(location.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get photographers by availability on a specific date
+     * @param date The date to check availability for
+     * @return List of photographers available on the given date
+     */
+    public List<Photographer> getAvailablePhotographers(LocalDate date) {
+        if (date == null) return new ArrayList<>();
+
+        return photographers.stream()
+                .filter(p -> p.isAvailableOnDate(date))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get top rated photographers (rating >= 4.0)
+     * @param limit Maximum number of photographers to return
+     * @return List of top rated photographers
+     */
+    public List<Photographer> getTopRatedPhotographers(int limit) {
+        return photographers.stream()
+                .filter(p -> p.getRating() >= 4.0 && p.getReviewCount() > 0)
+                .sorted((p1, p2) -> Double.compare(p2.getRating(), p1.getRating())) // Sort by rating (descending)
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Search photographers by keyword (in name, biography, or specialties)
+     * @param keyword The keyword to search for
+     * @return List of photographers matching the keyword
+     */
+    public List<Photographer> searchPhotographers(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return new ArrayList<>(photographers);
+        }
+
+        String searchTerm = keyword.toLowerCase().trim();
+
+        return photographers.stream()
+                .filter(p -> {
+                    // Search in business name
+                    if (p.getBusinessName() != null &&
+                            p.getBusinessName().toLowerCase().contains(searchTerm)) {
+                        return true;
+                    }
+
+                    // Search in biography
+                    if (p.getBiography() != null &&
+                            p.getBiography().toLowerCase().contains(searchTerm)) {
+                        return true;
+                    }
+
+                    // Search in specialties
+                    for (String specialty : p.getSpecialties()) {
+                        if (specialty.toLowerCase().contains(searchTerm)) {
+                            return true;
+                        }
+                    }
+
+                    // Search in location
+                    if (p.getLocation() != null &&
+                            p.getLocation().toLowerCase().contains(searchTerm)) {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Check if a photographer is available for a booking
+     * @param photographerId The photographer ID
+     * @param bookingDate The booking date
+     * @return true if available, false otherwise
+     */
+    public boolean isPhotographerAvailableForBooking(String photographerId, LocalDate bookingDate) {
+        // First, check if photographer exists
+        Photographer photographer = getPhotographerById(photographerId);
+        if (photographer == null || bookingDate == null) {
+            return false;
+        }
+
+        // Check photographer's general availability
+        if (!photographer.isAvailableOnDate(bookingDate)) {
+            return false;
+        }
+
+        // Check for existing bookings on that date
+        BookingManager bookingManager = new BookingManager();
+        List<Booking> photographerBookings = bookingManager.getBookingsByPhotographer(photographerId);
+
+        for (Booking booking : photographerBookings) {
+            LocalDate bookingEventDate = booking.getEventDateTime().toLocalDate();
+
+            // If there's a booking on the same day and it's not cancelled, photographer is not available
+            if (bookingEventDate.equals(bookingDate) &&
+                    booking.getStatus() != Booking.BookingStatus.CANCELLED) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Verify a photographer (e.g., after admin review)
+     * @param photographerId The photographer ID
+     * @return true if successful, false otherwise
+     */
+    public boolean verifyPhotographer(String photographerId) {
+        Photographer photographer = getPhotographerById(photographerId);
+        if (photographer == null) {
+            return false;
+        }
+
+        photographer.setVerified(true);
+        return updatePhotographer(photographer);
+    }
+
+    /**
+     * Add a review for a photographer
+     * @param photographerId The photographer ID
+     * @param rating Rating (1-5)
+     * @return true if successful, false otherwise
+     */
+    public boolean addReviewForPhotographer(String photographerId, double rating) {
+        if (rating < 1 || rating > 5) {
+            return false;
+        }
+
+        Photographer photographer = getPhotographerById(photographerId);
+        if (photographer == null) {
+            return false;
+        }
+
+        try {
+            photographer.addReview(rating);
+            return updatePhotographer(photographer);
+        } catch (Exception e) {
+            System.err.println("Error adding review: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Add a portfolio image for a photographer
+     * @param photographerId The photographer ID
+     * @param imageUrl The image URL to add
+     * @return true if successful, false otherwise
+     */
+    public boolean addPortfolioImage(String photographerId, String imageUrl) {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return false;
+        }
+
+        Photographer photographer = getPhotographerById(photographerId);
+        if (photographer == null) {
+            return false;
+        }
+
+        photographer.addPortfolioImage(imageUrl);
+        return updatePhotographer(photographer);
+    }
+
+    /**
+     * Block a date for a photographer
+     * @param photographerId The photographer ID
+     * @param date The date to block
+     * @return true if successful, false otherwise
+     */
+    public boolean blockDateForPhotographer(String photographerId, LocalDate date) {
+        if (date == null) {
+            return false;
+        }
+
+        Photographer photographer = getPhotographerById(photographerId);
+        if (photographer == null) {
+            return false;
+        }
+
+        photographer.blockDate(date);
+        return updatePhotographer(photographer);
+    }
+}

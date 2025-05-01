@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Manages all booking-related operations for the Event Photography System
+ */
 public class BookingManager {
     private static final String BOOKING_FILE = "bookings.txt";
     private List<Booking> bookings;
@@ -14,71 +17,296 @@ public class BookingManager {
         this.bookings = loadBookings();
     }
 
-    // Load bookings from file
+    /**
+     * Load bookings from file
+     * @return List of bookings
+     */
     private List<Booking> loadBookings() {
         List<String> lines = FileHandler.readLines(BOOKING_FILE);
-        return lines.stream()
-                .filter(line -> !line.trim().isEmpty())
-                .map(Booking::fromFileString)
-                .collect(Collectors.toList());
+        List<Booking> loadedBookings = new ArrayList<>();
+
+        for (String line : lines) {
+            if (!line.trim().isEmpty()) {
+                Booking booking = Booking.fromFileString(line);
+                if (booking != null) {
+                    loadedBookings.add(booking);
+                }
+            }
+        }
+
+        return loadedBookings;
     }
 
-    // Save bookings to file
-    private void saveBookings() {
-        FileHandler.deleteFile(BOOKING_FILE);
-        bookings.forEach(booking ->
-                FileHandler.appendLine(BOOKING_FILE, booking.toFileString())
-        );
+    /**
+     * Save all bookings to file
+     * @return true if successful, false otherwise
+     */
+    private boolean saveBookings() {
+        try {
+            // Delete existing file content
+            FileHandler.deleteFile(BOOKING_FILE);
+
+            // Write each booking to file
+            for (Booking booking : bookings) {
+                FileHandler.appendLine(BOOKING_FILE, booking.toFileString());
+            }
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error saving bookings: " + e.getMessage());
+            return false;
+        }
     }
 
-    // Create a new booking
+    /**
+     * Create a new booking
+     * @param booking The booking to create
+     * @return true if successful, false otherwise
+     */
     public boolean createBooking(Booking booking) {
         // Basic validation
-        if (booking == null || booking.getClientId() == null) {
+        if (booking == null || booking.getClientId() == null || booking.getPhotographerId() == null) {
             return false;
         }
 
+        // Set booking date time to now if not set
+        if (booking.getBookingDateTime() == null) {
+            booking.setBookingDateTime(LocalDateTime.now());
+        }
+
+        // Set status to PENDING if not set
+        if (booking.getStatus() == null) {
+            booking.setStatus(Booking.BookingStatus.PENDING);
+        }
+
+        // Add to list and save
         bookings.add(booking);
-        saveBookings();
-        return true;
+        return saveBookings();
     }
 
-    // Get booking by ID
+    /**
+     * Get booking by ID
+     * @param bookingId The booking ID
+     * @return The booking or null if not found
+     */
     public Booking getBookingById(String bookingId) {
+        if (bookingId == null) return null;
+
         return bookings.stream()
                 .filter(b -> b.getBookingId().equals(bookingId))
                 .findFirst()
                 .orElse(null);
     }
 
-    // Get bookings for a client
+    /**
+     * Get all bookings for a client
+     * @param clientId The client ID
+     * @return List of bookings for the client
+     */
     public List<Booking> getBookingsByClient(String clientId) {
+        if (clientId == null) return new ArrayList<>();
+
         return bookings.stream()
                 .filter(b -> b.getClientId().equals(clientId))
                 .collect(Collectors.toList());
     }
 
-    // Get bookings for a photographer
+    /**
+     * Get all bookings for a photographer
+     * @param photographerId The photographer ID
+     * @return List of bookings for the photographer
+     */
     public List<Booking> getBookingsByPhotographer(String photographerId) {
+        if (photographerId == null) return new ArrayList<>();
+
         return bookings.stream()
                 .filter(b -> b.getPhotographerId().equals(photographerId))
                 .collect(Collectors.toList());
     }
 
-    // Update booking status
+    /**
+     * Get all bookings with a specific status
+     * @param status The booking status
+     * @return List of bookings with the specified status
+     */
+    public List<Booking> getBookingsByStatus(Booking.BookingStatus status) {
+        if (status == null) return new ArrayList<>();
+
+        return bookings.stream()
+                .filter(b -> b.getStatus() == status)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all bookings for a date range
+     * @param startDate The start date (inclusive)
+     * @param endDate The end date (inclusive)
+     * @return List of bookings in the date range
+     */
+    public List<Booking> getBookingsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null || endDate == null) return new ArrayList<>();
+
+        return bookings.stream()
+                .filter(b -> !b.getEventDateTime().isBefore(startDate) && !b.getEventDateTime().isAfter(endDate))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all bookings
+     * @return List of all bookings
+     */
+    public List<Booking> getAllBookings() {
+        return new ArrayList<>(bookings);
+    }
+
+    /**
+     * Update an existing booking
+     * @param updatedBooking The updated booking
+     * @return true if successful, false otherwise
+     */
+    public boolean updateBooking(Booking updatedBooking) {
+        if (updatedBooking == null || updatedBooking.getBookingId() == null) {
+            return false;
+        }
+
+        for (int i = 0; i < bookings.size(); i++) {
+            if (bookings.get(i).getBookingId().equals(updatedBooking.getBookingId())) {
+                bookings.set(i, updatedBooking);
+                return saveBookings();
+            }
+        }
+
+        return false; // Booking not found
+    }
+
+    /**
+     * Update booking status
+     * @param bookingId The booking ID
+     * @param newStatus The new status
+     * @return true if successful, false otherwise
+     */
     public boolean updateBookingStatus(String bookingId, Booking.BookingStatus newStatus) {
+        if (bookingId == null || newStatus == null) {
+            return false;
+        }
+
         for (Booking booking : bookings) {
             if (booking.getBookingId().equals(bookingId)) {
                 booking.setStatus(newStatus);
-                saveBookings();
-                return true;
+                return saveBookings();
             }
         }
-        return false;
+
+        return false; // Booking not found
     }
 
-    // Cancel a booking
+    /**
+     * Cancel a booking
+     * @param bookingId The booking ID
+     * @return true if successful, false otherwise
+     */
     public boolean cancelBooking(String bookingId) {
         return updateBookingStatus(bookingId, Booking.BookingStatus.CANCELLED);
+    }
+
+    /**
+     * Delete a booking
+     * @param bookingId The booking ID
+     * @return true if successful, false otherwise
+     */
+    public boolean deleteBooking(String bookingId) {
+        if (bookingId == null) {
+            return false;
+        }
+
+        boolean removed = bookings.removeIf(b -> b.getBookingId().equals(bookingId));
+        if (removed) {
+            return saveBookings();
+        }
+
+        return false; // Booking not found
+    }
+
+    /**
+     * Check if a photographer is available for a given date and time
+     * @param photographerId The photographer ID
+     * @param eventDateTime The event date and time
+     * @param durationHours The duration in hours
+     * @return true if available, false otherwise
+     */
+    public boolean isPhotographerAvailable(String photographerId, LocalDateTime eventDateTime, int durationHours) {
+        if (photographerId == null || eventDateTime == null) {
+            return false;
+        }
+
+        LocalDateTime eventEndTime = eventDateTime.plusHours(durationHours);
+
+        // Check existing bookings for conflicts
+        for (Booking booking : bookings) {
+            if (booking.getPhotographerId().equals(photographerId) &&
+                    booking.getStatus() != Booking.BookingStatus.CANCELLED) {
+
+                // Estimate booking duration as 3 hours if not specified
+                int existingBookingDuration = 3;
+
+                LocalDateTime existingStart = booking.getEventDateTime();
+                LocalDateTime existingEnd = existingStart.plusHours(existingBookingDuration);
+
+                // Check for overlap
+                if ((eventDateTime.isBefore(existingEnd) && eventEndTime.isAfter(existingStart))) {
+                    return false; // Conflict found
+                }
+            }
+        }
+
+        return true; // No conflicts found
+    }
+
+    /**
+     * Get upcoming bookings for a user
+     * @param userId The user ID
+     * @param isPhotographer true if user is a photographer, false if client
+     * @return List of upcoming bookings
+     */
+    public List<Booking> getUpcomingBookings(String userId, boolean isPhotographer) {
+        if (userId == null) return new ArrayList<>();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return bookings.stream()
+                .filter(b -> {
+                    if (isPhotographer) {
+                        return b.getPhotographerId().equals(userId);
+                    } else {
+                        return b.getClientId().equals(userId);
+                    }
+                })
+                .filter(b -> b.getEventDateTime().isAfter(now))
+                .filter(b -> b.getStatus() != Booking.BookingStatus.CANCELLED)
+                .sorted((b1, b2) -> b1.getEventDateTime().compareTo(b2.getEventDateTime()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get past bookings for a user
+     * @param userId The user ID
+     * @param isPhotographer true if user is a photographer, false if client
+     * @return List of past bookings
+     */
+    public List<Booking> getPastBookings(String userId, boolean isPhotographer) {
+        if (userId == null) return new ArrayList<>();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return bookings.stream()
+                .filter(b -> {
+                    if (isPhotographer) {
+                        return b.getPhotographerId().equals(userId);
+                    } else {
+                        return b.getClientId().equals(userId);
+                    }
+                })
+                .filter(b -> b.getEventDateTime().isBefore(now))
+                .sorted((b1, b2) -> b2.getEventDateTime().compareTo(b1.getEventDateTime())) // Newest first
+                .collect(Collectors.toList());
     }
 }
