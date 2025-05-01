@@ -1,1 +1,2 @@
 85f32f46-ba0b-4462-b27e-036d0e1f319d,hasindut1,20020224Ha@,hasindutwm@gmail.com,hasindu wanninayakee,CLIENT,true
+7e2bc8a5-8755-423e-a1a8-8c7b34720bee,photoman1,20020224Ha@,photoman1@gmail.com,test photograher,PHOTOGRAPHER,true
