@@ -123,6 +123,7 @@ public class AgencyPhotographer extends Photographer {
 
     /**
      * Calculate agency commission
+     *
      * @param totalPrice Total booking price
      * @return Commission amount
      */
@@ -132,6 +133,7 @@ public class AgencyPhotographer extends Photographer {
 
     /**
      * Calculate photographer's earnings after commission
+     *
      * @param totalPrice Total booking price
      * @return Photographer's earnings
      */
@@ -141,6 +143,7 @@ public class AgencyPhotographer extends Photographer {
 
     /**
      * Check if rush delivery is available
+     *
      * @param requestedDays Requested delivery time in days
      * @return true if rush delivery is available, false otherwise
      */
@@ -152,8 +155,9 @@ public class AgencyPhotographer extends Photographer {
 
     /**
      * Calculate rush delivery fee
+     *
      * @param requestedDays Requested delivery time in days
-     * @param basePrice Base price of booking
+     * @param basePrice     Base price of booking
      * @return Rush delivery fee, or -1 if rush delivery not available
      */
     public double calculateRushDeliveryFee(int requestedDays, double basePrice) {
@@ -162,7 +166,7 @@ public class AgencyPhotographer extends Photographer {
         }
 
         // Fee increases as delivery time decreases
-        double rushFactor = (double)(deliveryTimeInDays - requestedDays) / deliveryTimeInDays;
+        double rushFactor = (double) (deliveryTimeInDays - requestedDays) / deliveryTimeInDays;
         return basePrice * 0.25 * rushFactor; // Up to 25% of base price
     }
 
@@ -186,6 +190,7 @@ public class AgencyPhotographer extends Photographer {
 
     /**
      * Create AgencyPhotographer from file string
+     *
      * @param fileString String representation from file
      * @return AgencyPhotographer object
      */
@@ -222,6 +227,7 @@ public class AgencyPhotographer extends Photographer {
         agencyPhotographer.setWebsiteUrl(basePhotographer.getWebsiteUrl());
         agencyPhotographer.setSocialMediaLinks(basePhotographer.getSocialMediaLinks());
         agencyPhotographer.setYearsOfExperience(basePhotographer.getYearsOfExperience());
+        agencyPhotographer.setEmail(basePhotographer.getEmail());
 
         // Parse agency-specific properties
         String[] agencyParts = parts[1].split(",");

@@ -13,6 +13,8 @@ import com.photobooking.model.gallery.Gallery;
 import com.photobooking.model.gallery.GalleryManager;
 import com.photobooking.model.photographer.Photographer;
 import com.photobooking.model.photographer.PhotographerManager;
+import com.photobooking.model.photographer.PhotographerService;
+import com.photobooking.model.photographer.PhotographerServiceManager;
 import com.photobooking.model.review.Review;
 import com.photobooking.model.review.ReviewManager;
 import com.photobooking.model.user.User;
@@ -88,7 +90,7 @@ public class PhotographerProfileServlet extends HttpServlet {
         }
 
         // Get the user info for the photographer
-        UserManager userManager = new UserManager();
+        UserManager userManager = new UserManager(getServletContext());
         User photographerUser = userManager.getUserById(photographer.getUserId());
 
         // Get photographer's public galleries
@@ -109,6 +111,10 @@ public class PhotographerProfileServlet extends HttpServlet {
         // Get rating distribution
         int[] ratingDistribution = reviewManager.getRatingDistribution(photographerId);
 
+        // Get photographer's services
+        PhotographerServiceManager serviceManager = new PhotographerServiceManager();
+        List<PhotographerService> services = serviceManager.getActiveServicesByPhotographer(photographerId);
+
         // Check if the current user can review this photographer
         boolean canReview = false;
 
@@ -127,13 +133,18 @@ public class PhotographerProfileServlet extends HttpServlet {
             }
         }
 
+        // Generate availability JSON for calendar
+        String availabilityJson = "[]"; // This would be generated based on available dates
+
         // Set attributes for the view
         request.setAttribute("photographer", photographer);
         request.setAttribute("photographerUser", photographerUser);
         request.setAttribute("galleries", galleries);
         request.setAttribute("reviews", reviews);
         request.setAttribute("ratingDistribution", ratingDistribution);
+        request.setAttribute("services", services);
         request.setAttribute("canReview", canReview);
+        request.setAttribute("availabilityJson", availabilityJson);
 
         // Forward to photographer profile JSP
         request.getRequestDispatcher("/photographer/photographer_profile.jsp").forward(request, response);

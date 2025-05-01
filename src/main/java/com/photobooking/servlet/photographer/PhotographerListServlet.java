@@ -84,60 +84,34 @@ public class PhotographerListServlet extends HttpServlet {
             if (!ValidationUtil.isNullOrEmpty(sortBy)) {
                 switch (sortBy) {
                     case "rating-desc":
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> Double.compare(p2.getRating(), p1.getRating()))
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByRating(filteredPhotographers, false);
                         break;
                     case "rating-asc":
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> Double.compare(p1.getRating(), p2.getRating()))
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByRating(filteredPhotographers, true);
                         break;
                     case "price-asc":
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> Double.compare(p1.getBasePrice(), p2.getBasePrice()))
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByPrice(true);
                         break;
                     case "price-desc":
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> Double.compare(p2.getBasePrice(), p1.getBasePrice()))
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByPrice(false);
                         break;
                     case "experience-desc":
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> Integer.compare(p2.getYearsOfExperience(), p1.getYearsOfExperience()))
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByExperience(false);
                         break;
                     case "name-asc":
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> {
-                                    String name1 = p1.getBusinessName() != null ? p1.getBusinessName() : "";
-                                    String name2 = p2.getBusinessName() != null ? p2.getBusinessName() : "";
-                                    return name1.compareToIgnoreCase(name2);
-                                })
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByName(true);
                         break;
                     case "name-desc":
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> {
-                                    String name1 = p1.getBusinessName() != null ? p1.getBusinessName() : "";
-                                    String name2 = p2.getBusinessName() != null ? p2.getBusinessName() : "";
-                                    return name2.compareToIgnoreCase(name1);
-                                })
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByName(false);
                         break;
                     default:
                         // Default sort by rating (highest first)
-                        filteredPhotographers = filteredPhotographers.stream()
-                                .sorted((p1, p2) -> Double.compare(p2.getRating(), p1.getRating()))
-                                .toList();
+                        filteredPhotographers = photographerManager.sortPhotographersByRating(filteredPhotographers, false);
                         break;
                 }
             } else {
                 // Default sort by rating if no sortBy parameter
-                filteredPhotographers = filteredPhotographers.stream()
-                        .sorted((p1, p2) -> Double.compare(p2.getRating(), p1.getRating()))
-                        .toList();
+                filteredPhotographers = photographerManager.sortPhotographersByRating(filteredPhotographers, false);
             }
 
             // Calculate pagination

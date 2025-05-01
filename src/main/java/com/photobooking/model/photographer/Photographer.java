@@ -35,6 +35,7 @@ public class Photographer implements Serializable {
     private String websiteUrl;
     private String socialMediaLinks;
     private int yearsOfExperience;
+    private String email; // Added for contact purposes
 
     // Time slot class for availability
     public static class TimeSlot implements Serializable {
@@ -250,6 +251,14 @@ public class Photographer implements Serializable {
         this.yearsOfExperience = yearsOfExperience;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     // Business methods
     /**
      * Calculate price for a specific booking type
@@ -358,13 +367,13 @@ public class Photographer implements Serializable {
         StringBuilder sb = new StringBuilder();
         sb.append(photographerId).append(",");
         sb.append(userId).append(",");
-        sb.append(businessName).append(",");
-        sb.append(biography.replace(",", ";;")).append(","); // Escape commas in biography
+        sb.append(businessName != null ? businessName.replace(",", ";;") : "").append(",");
+        sb.append(biography != null ? biography.replace(",", ";;") : "").append(",");
 
         // Join specialties with |
         sb.append(String.join("|", specialties)).append(",");
 
-        sb.append(location).append(",");
+        sb.append(location != null ? location : "").append(",");
         sb.append(basePrice).append(",");
         sb.append(rating).append(",");
         sb.append(reviewCount).append(",");
@@ -382,7 +391,8 @@ public class Photographer implements Serializable {
         sb.append(contactPhone != null ? contactPhone : "").append(",");
         sb.append(websiteUrl != null ? websiteUrl : "").append(",");
         sb.append(socialMediaLinks != null ? socialMediaLinks : "").append(",");
-        sb.append(yearsOfExperience);
+        sb.append(yearsOfExperience).append(",");
+        sb.append(email != null ? email : "");
 
         return sb.toString();
     }
@@ -394,7 +404,7 @@ public class Photographer implements Serializable {
      */
     public static Photographer fromFileString(String fileString) {
         String[] parts = fileString.split(",");
-        if (parts.length < 15) {
+        if (parts.length < 17) {
             return null; // Not enough parts for a valid photographer
         }
 
@@ -403,8 +413,8 @@ public class Photographer implements Serializable {
 
         photographer.setPhotographerId(parts[index++]);
         photographer.setUserId(parts[index++]);
-        photographer.setBusinessName(parts[index++]);
-        photographer.setBiography(parts[index++].replace(";;", ",")); // Unescape commas
+        photographer.setBusinessName(parts[index++].replace(";;", ","));
+        photographer.setBiography(parts[index++].replace(";;", ","));
 
         // Parse specialties
         String specialtiesStr = parts[index++];
@@ -438,9 +448,10 @@ public class Photographer implements Serializable {
         photographer.setContactPhone(parts[index++]);
         photographer.setWebsiteUrl(parts[index++]);
         photographer.setSocialMediaLinks(parts[index++]);
+        photographer.setYearsOfExperience(Integer.parseInt(parts[index++]));
 
         if (index < parts.length) {
-            photographer.setYearsOfExperience(Integer.parseInt(parts[index]));
+            photographer.setEmail(parts[index]);
         }
 
         return photographer;

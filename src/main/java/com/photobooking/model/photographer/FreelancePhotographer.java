@@ -186,6 +186,7 @@ public class FreelancePhotographer extends Photographer {
         freelancer.setWebsiteUrl(basePhotographer.getWebsiteUrl());
         freelancer.setSocialMediaLinks(basePhotographer.getSocialMediaLinks());
         freelancer.setYearsOfExperience(basePhotographer.getYearsOfExperience());
+        freelancer.setEmail(basePhotographer.getEmail());
 
         // Parse freelance-specific properties
         String[] freelanceParts = parts[1].split(",");
