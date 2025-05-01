@@ -67,10 +67,10 @@
                         <c:otherwise>
                             <!-- User is not logged in -->
                             <li class="nav-item">
-                                <a class="nav-link" href="${pageContext.request.contextPath}/user/login.jsp">Login</a>
+                                  <a href="${pageContext.request.contextPath}/login" class="btn btn-primary">Login</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link btn btn-outline-light btn-sm py-1 px-3 ms-2" href="${pageContext.request.contextPath}/user/register.jsp">Sign Up</a>
+                                  <a href="${pageContext.request.contextPath}/register" class="btn btn-secondary">Register</a>
                             </li>
                         </c:otherwise>
                     </c:choose>
