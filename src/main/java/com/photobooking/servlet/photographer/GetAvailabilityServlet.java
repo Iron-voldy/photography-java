@@ -95,11 +95,11 @@ public class GetAvailabilityServlet extends HttpServlet {
                 }
             }
 
-            JsonObject response = new JsonObject();
-            response.addProperty("success", true);
-            response.add("availableTimeSlots", gson.toJsonTree(availableTimeSlots));
+            JsonObject jsonResponse = new JsonObject(); // Changed variable name to avoid conflict
+            jsonResponse.addProperty("success", true);
+            jsonResponse.add("availableTimeSlots", gson.toJsonTree(availableTimeSlots));
 
-            out.print(gson.toJson(response));
+            out.print(gson.toJson(jsonResponse));
         } catch (Exception e) {
             JsonObject error = new JsonObject();
             error.addProperty("success", false);

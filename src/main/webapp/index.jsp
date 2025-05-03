@@ -5,185 +5,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SnapEvent - Professional Photography & Videography</title>
+    <title>SnapEvent - Professional Photography Services</title>
 
-    <!-- Favicon -->
-    <link rel="icon" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/icons/camera.svg" type="image/svg+xml">
-
-    <!-- Bootstrap 5.3 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- AOS Animation Library -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-
-    <!-- Custom Dark Theme CSS -->
-    <style>
-        :root {
-            --dark-bg: #121212;
-            --dark-card: #1E1E1E;
-            --primary-color: #BB86FC;
-            --secondary-color: #03DAC6;
-        }
-
-        body {
-            background-color: var(--dark-bg);
-            color: #ffffff;
-            font-family: 'Arial', sans-serif;
-        }
-
-        .navbar {
-            background-color: rgba(30, 30, 30, 0.9) !important;
-            backdrop-filter: blur(10px);
-        }
-
-        .hero-section {
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
-                        url('https://images.unsplash.com/photo-1516035069371-29a1b244cc32?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1964&q=80');
-            background-size: cover;
-            background-position: center;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-        }
-
-        .dark-card {
-            background-color: var(--dark-card);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .dark-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(187,134,252,0.2);
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            color: var(--dark-bg);
-        }
-
-        .btn-outline-light {
-            border-color: var(--secondary-color);
-            color: var(--secondary-color);
-        }
-
-        .video-gallery .card-img-overlay {
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .video-gallery .card:hover .card-img-overlay {
-            opacity: 1;
-        }
-
-        /* Fix for video modal */
-        .modal-content.bg-dark {
-            background-color: #121212 !important;
-        }
-
-        .youtube-container {
-            position: relative;
-            width: 100%;
-            height: 0;
-            padding-bottom: 56.25%;
-            overflow: hidden;
-        }
-
-        .youtube-container img {
-            width: 100%;
-            height: auto;
-            cursor: pointer;
-        }
-
-        .youtube-container .play-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 68px;
-            height: 48px;
-            background-color: #212121;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        .youtube-container .play-button::before {
-            content: "";
-            border-style: solid;
-            border-width: 12px 0 12px 20px;
-            border-color: transparent transparent transparent white;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-40%, -50%);
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
-    <!-- Header Navigation -->
+    <!-- Include Header -->
     <jsp:include page="/includes/header.jsp" />
 
     <!-- Hero Section -->
-    <section class="hero-section text-center text-white">
+    <section class="bg-primary text-white p-5">
         <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8" data-aos="fade-up">
-                    <h1 class="display-3 mb-4">Capture Every Moment</h1>
-                    <p class="lead mb-5">Professional Photography and Videography Services</p>
-                    <div class="d-flex justify-content-center gap-3">
-                        <a href="#services" class="btn btn-primary btn-lg">Our Services</a>
-                        <a href="#contact" class="btn btn-outline-light btn-lg">Book Now</a>
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold">Find Your Perfect Photographer</h1>
+                    <p class="lead mb-4">Professional photography services for every occasion</p>
+                    <div class="d-grid gap-3 d-sm-flex">
+                        <a href="${pageContext.request.contextPath}/photographer/photographer_list.jsp" class="btn btn-light btn-lg">Find Photographers</a>
+                        <a href="${pageContext.request.contextPath}/user/register.jsp" class="btn btn-outline-light btn-lg">Get Started</a>
                     </div>
+                </div>
+                <div class="col-lg-6">
+                    <img src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d" alt="Photography" class="img-fluid rounded">
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Services Section -->
-    <section id="services" class="py-5">
+    <section class="py-5">
         <div class="container">
-            <h2 class="text-center mb-5 text-white" data-aos="fade-up">Our Services</h2>
+            <h2 class="text-center mb-5">Our Photography Services</h2>
             <div class="row g-4">
-                <!-- Photography Services -->
-                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
-                    <div class="card dark-card h-100">
-                        <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1964&q=80"
-                             class="card-img-top" alt="Photography">
-                        <div class="card-body">
-                            <h5 class="card-title text-white">Photography</h5>
-                            <p class="card-text text-muted">Professional photography for weddings, events, portraits, and more.</p>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-camera-reels fs-1 text-primary mb-3"></i>
+                            <h3 class="card-title">Wedding Photography</h3>
+                            <p class="card-text">Capture your special day with professional wedding photographers</p>
                         </div>
                     </div>
                 </div>
-
-                <!-- Videography Services -->
-                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
-                    <div class="card dark-card h-100">
-                        <img src="https://images.unsplash.com/photo-1594904351111-a072f80c1a6d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1935&q=80"
-                             class="card-img-top" alt="Videography">
-                        <div class="card-body">
-                            <h5 class="card-title text-white">Videography</h5>
-                            <p class="card-text text-muted">Cinematic video production for weddings, documentaries, and corporate events.</p>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-people fs-1 text-primary mb-3"></i>
+                            <h3 class="card-title">Portrait Photography</h3>
+                            <p class="card-text">Professional portraits for individuals, couples, and families</p>
                         </div>
                     </div>
                 </div>
-
-                <!-- Drone Videography -->
-                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
-                    <div class="card dark-card h-100">
-                        <img src="https://images.unsplash.com/photo-1530577197743-7adf14294584?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1965&q=80"
-                             class="card-img-top" alt="Drone Videography">
-                        <div class="card-body">
-                            <h5 class="card-title text-white">Drone Videography</h5>
-                            <p class="card-text text-muted">Stunning aerial shots and panoramic views for unique perspectives.</p>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-calendar-event fs-1 text-primary mb-3"></i>
+                            <h3 class="card-title">Event Photography</h3>
+                            <p class="card-text">Document your corporate events, parties, and special occasions</p>
                         </div>
                     </div>
                 </div>
@@ -191,172 +72,55 @@
         </div>
     </section>
 
-    <!-- Video Gallery Section -->
-    <section class="py-5 video-gallery">
+    <!-- How It Works Section -->
+    <section class="py-5 bg-light">
         <div class="container">
-            <h2 class="text-center mb-5 text-white" data-aos="fade-up">Video Showcase</h2>
+            <h2 class="text-center mb-5">How It Works</h2>
             <div class="row g-4">
-                <!-- Video 1 -->
-                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
-                    <div class="card dark-card position-relative">
-                        <img src="https://images.unsplash.com/photo-1460776960861-75de890d1538?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80"
-                             class="card-img" alt="Wedding Video">
-                        <div class="card-img-overlay">
-                            <a href="#" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#videoModal1">
-                                <i class="bi bi-play-fill"></i> Watch Video
-                            </a>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <span class="fs-4">1</span>
                         </div>
+                        <h4>Find Your Photographer</h4>
+                        <p>Browse through our selection of professional photographers</p>
                     </div>
                 </div>
-
-                <!-- Video 2 -->
-                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
-                    <div class="card dark-card position-relative">
-                        <img src="https://images.unsplash.com/photo-1519120944692-1a8d8cfc107f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1936&q=80"
-                             class="card-img" alt="Corporate Event Video">
-                        <div class="card-img-overlay">
-                            <a href="#" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#videoModal2">
-                                <i class="bi bi-play-fill"></i> Watch Video
-                            </a>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <span class="fs-4">2</span>
                         </div>
+                        <h4>Book Your Session</h4>
+                        <p>Choose the perfect package and schedule your photo session</p>
                     </div>
                 </div>
-
-                <!-- Video 3 -->
-                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
-                    <div class="card dark-card position-relative">
-                        <img src="https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1970&q=80"
-                             class="card-img" alt="Drone Videography">
-                        <div class="card-img-overlay">
-                            <a href="#" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#videoModal3">
-                                <i class="bi bi-play-fill"></i> Watch Video
-                            </a>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <span class="fs-4">3</span>
                         </div>
+                        <h4>Get Your Photos</h4>
+                        <p>Receive your professionally edited photos and memories</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Contact Section -->
-    <section id="contact" class="py-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8 text-center" data-aos="fade-up">
-                    <h2 class="mb-4 text-white">Book Your Shoot</h2>
-                    <p class="lead mb-5 text-muted">Ready to create lasting memories? Contact us today!</p>
-                    <a href="#" class="btn btn-primary btn-lg">Get Started</a>
-                </div>
-            </div>
+    <!-- CTA Section -->
+    <section class="py-5 bg-primary text-white">
+        <div class="container text-center">
+            <h2 class="mb-4">Ready to Book Your Photography Session?</h2>
+            <p class="lead mb-4">Join thousands of satisfied clients who trust SnapEvent for their photography needs</p>
+            <a href="${pageContext.request.contextPath}/photographer/photographer_list.jsp" class="btn btn-light btn-lg">Browse Photographers</a>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Include Footer -->
     <jsp:include page="/includes/footer.jsp" />
 
-    <!-- Video Modals -->
-    <!-- Video Modal 1 -->
-    <div class="modal fade" id="videoModal1" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title text-white">Wedding Video</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="youtube-container">
-                        <img src="https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" alt="Wedding Video Thumbnail">
-                        <div class="play-button" onclick="loadYoutubeVideo(this, 'dQw4w9WgXcQ')"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Video Modal 2 -->
-    <div class="modal fade" id="videoModal2" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title text-white">Corporate Event Video</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="youtube-container">
-                        <img src="https://img.youtube.com/vi/C0DPdy98e4c/maxresdefault.jpg" alt="Corporate Video Thumbnail">
-                        <div class="play-button" onclick="loadYoutubeVideo(this, 'C0DPdy98e4c')"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Video Modal 3 -->
-    <div class="modal fade" id="videoModal3" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title text-white">Drone Videography</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="youtube-container">
-                        <img src="https://img.youtube.com/vi/hI4nrLxnW1A/maxresdefault.jpg" alt="Drone Video Thumbnail">
-                        <div class="play-button" onclick="loadYoutubeVideo(this, 'hI4nrLxnW1A')"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap JS and Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- AOS Animation Library -->
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-
-    <script>
-        // Initialize AOS
-        AOS.init({
-            duration: 1000,
-            once: true
-        });
-
-        // YouTube video loading function
-        function loadYoutubeVideo(element, videoId) {
-            const container = element.parentNode;
-            const iframe = document.createElement('iframe');
-
-            iframe.setAttribute('width', '100%');
-            iframe.setAttribute('height', '100%');
-            iframe.setAttribute('frameborder', '0');
-            iframe.setAttribute('allowfullscreen', '1');
-            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
-
-            // Use privacy-enhanced mode URL
-            iframe.setAttribute('src', `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`);
-
-            // Replace the container content with iframe
-            container.innerHTML = '';
-            container.appendChild(iframe);
-        }
-
-        // Reset video modals on close
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('hidden.bs.modal', event => {
-                const modalBody = modal.querySelector('.modal-body');
-                const videoId = modalBody.querySelector('iframe')?.src.split('/').pop().split('?')[0] ||
-                                modalBody.querySelector('.play-button')?.getAttribute('onclick').match(/'([^']+)'/)[1];
-
-                if (videoId) {
-                    const container = modalBody.querySelector('.youtube-container');
-                    container.innerHTML = `
-                        <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" alt="Video Thumbnail">
-                        <div class="play-button" onclick="loadYoutubeVideo(this, '${videoId}')"></div>
-                    `;
-                }
-            });
-        });
-    </script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

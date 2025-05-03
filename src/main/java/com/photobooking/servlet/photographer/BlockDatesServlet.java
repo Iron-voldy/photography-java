@@ -106,11 +106,11 @@ public class BlockDatesServlet extends HttpServlet {
                 }
             }
 
-            JsonObject response = new JsonObject();
-            response.addProperty("success", true);
-            response.add("blockedDates", blockedDates);
+            JsonObject jsonResponse = new JsonObject(); // Changed variable name to avoid conflict
+            jsonResponse.addProperty("success", true);
+            jsonResponse.add("blockedDates", blockedDates);
 
-            out.print(gson.toJson(response));
+            out.print(gson.toJson(jsonResponse));
         } catch (Exception e) {
             JsonObject error = new JsonObject();
             error.addProperty("success", false);
