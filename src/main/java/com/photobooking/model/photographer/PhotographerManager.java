@@ -1,11 +1,6 @@
 package com.photobooking.model.photographer;
 
 import com.photobooking.util.FileHandler;
-import com.photobooking.model.booking.Booking;
-import com.photobooking.model.booking.BookingManager;
-
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -40,8 +35,6 @@ public class PhotographerManager {
 
                 if (line.contains("FREELANCE,")) {
                     photographer = FreelancePhotographer.fromFileString(line);
-                } else if (line.contains("AGENCY,")) {
-                    photographer = AgencyPhotographer.fromFileString(line);
                 } else {
                     photographer = Photographer.fromFileString(line);
                 }
@@ -195,47 +188,6 @@ public class PhotographerManager {
     }
 
     /**
-     * Get photographers by availability on a specific date
-     * @param date The date to check availability for
-     * @return List of photographers available on the given date
-     */
-    public List<Photographer> getAvailablePhotographers(LocalDate date) {
-        if (date == null) return new ArrayList<>();
-
-        return photographers.stream()
-                .filter(p -> p.isAvailableOnDate(date))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get photographers by availability and specialty
-     * @param date The date to check availability for
-     * @param specialty The specialty to filter by
-     * @return List of photographers available on the given date with the given specialty
-     */
-    public List<Photographer> getAvailablePhotographersBySpecialty(LocalDate date, String specialty) {
-        if (date == null || specialty == null) return new ArrayList<>();
-
-        return photographers.stream()
-                .filter(p -> p.isAvailableOnDate(date))
-                .filter(p -> p.getSpecialties().contains(specialty))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get top rated photographers (rating >= 4.0)
-     * @param limit Maximum number of photographers to return
-     * @return List of top rated photographers
-     */
-    public List<Photographer> getTopRatedPhotographers(int limit) {
-        return photographers.stream()
-                .filter(p -> p.getRating() >= 4.0 && p.getReviewCount() > 0)
-                .sorted((p1, p2) -> Double.compare(p2.getRating(), p1.getRating())) // Sort by rating (descending)
-                .limit(limit)
-                .collect(Collectors.toList());
-    }
-
-    /**
      * Sort photographers by rating (bubble sort implementation)
      * @param photographerList List of photographers to sort
      * @param ascending If true, sort in ascending order; otherwise, sort in descending order
@@ -323,193 +275,6 @@ public class PhotographerManager {
     }
 
     /**
-     * Check if a photographer is available for a booking
-     * @param photographerId The photographer ID
-     * @param bookingDate The booking date
-     * @return true if available, false otherwise
-     */
-    public boolean isPhotographerAvailableForBooking(String photographerId, LocalDate bookingDate) {
-        // First, check if photographer exists
-        Photographer photographer = getPhotographerById(photographerId);
-        if (photographer == null || bookingDate == null) {
-            return false;
-        }
-
-        // Check photographer's general availability
-        if (!photographer.isAvailableOnDate(bookingDate)) {
-            return false;
-        }
-
-        // Check for existing bookings on that date
-        BookingManager bookingManager = new BookingManager();
-        List<Booking> photographerBookings = bookingManager.getBookingsByPhotographer(photographerId);
-
-        for (Booking booking : photographerBookings) {
-            LocalDate bookingEventDate = booking.getEventDateTime().toLocalDate();
-
-            // If there's a booking on the same day and it's not cancelled, photographer is not available
-            if (bookingEventDate.equals(bookingDate) &&
-                    booking.getStatus() != Booking.BookingStatus.CANCELLED) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Verify a photographer (e.g., after admin review)
-     * @param photographerId The photographer ID
-     * @return true if successful, false otherwise
-     */
-    public boolean verifyPhotographer(String photographerId) {
-        Photographer photographer = getPhotographerById(photographerId);
-        if (photographer == null) {
-            return false;
-        }
-
-        photographer.setVerified(true);
-        return updatePhotographer(photographer);
-    }
-
-    /**
-     * Add a review for a photographer
-     * @param photographerId The photographer ID
-     * @param rating Rating (1-5)
-     * @return true if successful, false otherwise
-     */
-    public boolean addReviewForPhotographer(String photographerId, double rating) {
-        if (rating < 1 || rating > 5) {
-            return false;
-        }
-
-        Photographer photographer = getPhotographerById(photographerId);
-        if (photographer == null) {
-            return false;
-        }
-
-        try {
-            photographer.addReview(rating);
-            return updatePhotographer(photographer);
-        } catch (Exception e) {
-            System.err.println("Error adding review: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Add a portfolio image for a photographer
-     * @param photographerId The photographer ID
-     * @param imageUrl The image URL to add
-     * @return true if successful, false otherwise
-     */
-    public boolean addPortfolioImage(String photographerId, String imageUrl) {
-        if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            return false;
-        }
-
-        Photographer photographer = getPhotographerById(photographerId);
-        if (photographer == null) {
-            return false;
-        }
-
-        photographer.addPortfolioImage(imageUrl);
-        return updatePhotographer(photographer);
-    }
-
-    /**
-     * Block a date for a photographer
-     * @param photographerId The photographer ID
-     * @param date The date to block
-     * @return true if successful, false otherwise
-     */
-    public boolean blockDateForPhotographer(String photographerId, LocalDate date) {
-        if (date == null) {
-            return false;
-        }
-
-        Photographer photographer = getPhotographerById(photographerId);
-        if (photographer == null) {
-            return false;
-        }
-
-        photographer.blockDate(date);
-        return updatePhotographer(photographer);
-    }
-
-    /**
-     * Set a photographer's availability for a specific date
-     * @param photographerId The photographer ID
-     * @param date The date
-     * @param timeSlots The time slots
-     * @return true if successful, false otherwise
-     */
-    public boolean setPhotographerAvailability(String photographerId, LocalDate date,
-                                               List<Photographer.TimeSlot> timeSlots) {
-        if (date == null || timeSlots == null) {
-            return false;
-        }
-
-        Photographer photographer = getPhotographerById(photographerId);
-        if (photographer == null) {
-            return false;
-        }
-
-        photographer.setAvailabilityForDate(date, timeSlots);
-        return updatePhotographer(photographer);
-    }
-
-    /**
-     * Get a photographer's availability for a specific date
-     * @param photographerId The photographer ID
-     * @param date The date
-     * @return List of time slots, or null if photographer or date not found
-     */
-    public List<Photographer.TimeSlot> getPhotographerAvailability(String photographerId, LocalDate date) {
-        if (date == null) {
-            return null;
-        }
-
-        Photographer photographer = getPhotographerById(photographerId);
-        if (photographer == null) {
-            return null;
-        }
-
-        return photographer.getAvailability().get(date);
-    }
-
-    /**
-     * Create default time slots for a date (9AM to 5PM, all available)
-     * @return List of default time slots
-     */
-    public List<Photographer.TimeSlot> createDefaultTimeSlots() {
-        List<Photographer.TimeSlot> timeSlots = new ArrayList<>();
-        LocalTime startTime = LocalTime.of(9, 0); // 9:00 AM
-
-        for (int i = 0; i < 8; i++) { // 8 hours from 9AM to 5PM
-            LocalTime endTime = startTime.plusHours(1);
-            timeSlots.add(new Photographer.TimeSlot(startTime, endTime, true));
-            startTime = endTime;
-        }
-
-        return timeSlots;
-    }
-
-    /**
-     * Format date for display
-     * @param date The date to format
-     * @return Formatted date string
-     */
-    public String formatDateForDisplay(LocalDate date) {
-        if (date == null) {
-            return "";
-        }
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
-        return date.format(formatter);
-    }
-
-    /**
      * Sort photographers by price
      * @param ascending If true, sort in ascending order; otherwise, sort in descending order
      * @return Sorted list of photographers
@@ -569,7 +334,7 @@ public class PhotographerManager {
      * @param specialtiesList List of specialties
      * @param location Location
      * @param basePrice Base price
-     * @param photographerType Type of photographer (freelance or agency)
+     * @param photographerType Type of photographer (freelance or other)
      * @return The created photographer, or null if creation failed
      */
     public Photographer createPhotographerProfile(String userId, String businessName, String biography,
@@ -585,10 +350,6 @@ public class PhotographerManager {
         if ("freelance".equalsIgnoreCase(photographerType)) {
             photographer = new FreelancePhotographer(userId, businessName, biography,
                     specialtiesList, location, basePrice);
-        } else if ("agency".equalsIgnoreCase(photographerType)) {
-            photographer = new AgencyPhotographer(userId, businessName, biography,
-                    specialtiesList, location, basePrice,
-                    "", ""); // Empty agency name and ID for now
         } else {
             photographer = new Photographer(userId, businessName, biography,
                     specialtiesList, location, basePrice);

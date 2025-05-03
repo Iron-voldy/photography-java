@@ -13,7 +13,6 @@ public class FreelancePhotographer extends Photographer {
     private double travelFeePerMile;
     private int maxTravelDistance;
     private boolean offersDiscounts;
-    private double cancellationFeePercentage;
 
     // Constructors
     public FreelancePhotographer() {
@@ -22,7 +21,6 @@ public class FreelancePhotographer extends Photographer {
         this.travelFeePerMile = 0.50; // Default $0.50 per mile
         this.maxTravelDistance = 50; // Default 50 miles
         this.offersDiscounts = false;
-        this.cancellationFeePercentage = 25.0; // Default 25% cancellation fee
     }
 
     public FreelancePhotographer(String userId, String businessName, String biography,
@@ -32,7 +30,6 @@ public class FreelancePhotographer extends Photographer {
         this.travelFeePerMile = 0.50;
         this.maxTravelDistance = 50;
         this.offersDiscounts = false;
-        this.cancellationFeePercentage = 25.0;
     }
 
     // Getters and Setters
@@ -66,14 +63,6 @@ public class FreelancePhotographer extends Photographer {
 
     public void setOffersDiscounts(boolean offersDiscounts) {
         this.offersDiscounts = offersDiscounts;
-    }
-
-    public double getCancellationFeePercentage() {
-        return cancellationFeePercentage;
-    }
-
-    public void setCancellationFeePercentage(double cancellationFeePercentage) {
-        this.cancellationFeePercentage = cancellationFeePercentage;
     }
 
     // Overridden methods
@@ -111,15 +100,6 @@ public class FreelancePhotographer extends Photographer {
     }
 
     /**
-     * Calculate cancellation fee based on booking price
-     * @param bookingPrice The original booking price
-     * @return Cancellation fee amount
-     */
-    public double calculateCancellationFee(double bookingPrice) {
-        return bookingPrice * (cancellationFeePercentage / 100.0);
-    }
-
-    /**
      * Apply discount for repeat customers (if offered)
      * @param price Original price
      * @param isRepeatCustomer Whether the customer has booked before
@@ -144,8 +124,7 @@ public class FreelancePhotographer extends Photographer {
                 providesOwnEquipment + "," +
                 travelFeePerMile + "," +
                 maxTravelDistance + "," +
-                offersDiscounts + "," +
-                cancellationFeePercentage;
+                offersDiscounts;
     }
 
     /**
@@ -155,7 +134,7 @@ public class FreelancePhotographer extends Photographer {
      */
     public static FreelancePhotographer fromFileString(String fileString) {
         // Split the string into base part and freelance part
-        String[] parts = fileString.split("FREELANCE,");
+        String[] parts = fileString.split(",FREELANCE,");
         if (parts.length < 2) {
             return null; // Not a valid freelance photographer string
         }
@@ -177,25 +156,19 @@ public class FreelancePhotographer extends Photographer {
         freelancer.setBasePrice(basePhotographer.getBasePrice());
         freelancer.setRating(basePhotographer.getRating());
         freelancer.setReviewCount(basePhotographer.getReviewCount());
-        freelancer.setAvailability(basePhotographer.getAvailability());
-        freelancer.setPortfolioImageUrls(basePhotographer.getPortfolioImageUrls());
-        freelancer.setAvailableWeekends(basePhotographer.isAvailableWeekends());
-        freelancer.setAvailableWeekdays(basePhotographer.isAvailableWeekdays());
         freelancer.setVerified(basePhotographer.isVerified());
         freelancer.setContactPhone(basePhotographer.getContactPhone());
         freelancer.setWebsiteUrl(basePhotographer.getWebsiteUrl());
-        freelancer.setSocialMediaLinks(basePhotographer.getSocialMediaLinks());
         freelancer.setYearsOfExperience(basePhotographer.getYearsOfExperience());
         freelancer.setEmail(basePhotographer.getEmail());
 
         // Parse freelance-specific properties
         String[] freelanceParts = parts[1].split(",");
-        if (freelanceParts.length >= 5) {
+        if (freelanceParts.length >= 4) {
             freelancer.setProvidesOwnEquipment(Boolean.parseBoolean(freelanceParts[0]));
             freelancer.setTravelFeePerMile(Double.parseDouble(freelanceParts[1]));
             freelancer.setMaxTravelDistance(Integer.parseInt(freelanceParts[2]));
             freelancer.setOffersDiscounts(Boolean.parseBoolean(freelanceParts[3]));
-            freelancer.setCancellationFeePercentage(Double.parseDouble(freelanceParts[4]));
         }
 
         return freelancer;

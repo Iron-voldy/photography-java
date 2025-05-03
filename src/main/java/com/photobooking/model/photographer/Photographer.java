@@ -1,13 +1,8 @@
 package com.photobooking.model.photographer;
 
 import java.io.Serializable;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -17,79 +12,27 @@ public class Photographer implements Serializable {
     private static final long serialVersionUID = 1L;
 
     // Photographer attributes
-    private String photographerId;
-    private String userId;
-    private String businessName;
-    private String biography;
-    private List<String> specialties;
-    private String location;
-    private double basePrice;
-    private double rating;
-    private int reviewCount;
-    private Map<LocalDate, List<TimeSlot>> availability;
-    private List<String> portfolioImageUrls;
-    private boolean isAvailableWeekends;
-    private boolean isAvailableWeekdays;
-    private boolean isVerified;
-    private String contactPhone;
-    private String websiteUrl;
-    private String socialMediaLinks;
-    private int yearsOfExperience;
-    private String email; // Added for contact purposes
-
-    // Time slot class for availability
-    public static class TimeSlot implements Serializable {
-        private static final long serialVersionUID = 1L;
-        private LocalTime startTime;
-        private LocalTime endTime;
-        private boolean isAvailable;
-
-        public TimeSlot(LocalTime startTime, LocalTime endTime, boolean isAvailable) {
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.isAvailable = isAvailable;
-        }
-
-        public LocalTime getStartTime() {
-            return startTime;
-        }
-
-        public void setStartTime(LocalTime startTime) {
-            this.startTime = startTime;
-        }
-
-        public LocalTime getEndTime() {
-            return endTime;
-        }
-
-        public void setEndTime(LocalTime endTime) {
-            this.endTime = endTime;
-        }
-
-        public boolean isAvailable() {
-            return isAvailable;
-        }
-
-        public void setAvailable(boolean available) {
-            isAvailable = available;
-        }
-
-        @Override
-        public String toString() {
-            return startTime + "-" + endTime + (isAvailable ? "(Available)" : "(Booked)");
-        }
-    }
+    protected String photographerId;
+    protected String userId;
+    protected String businessName;
+    protected String biography;
+    protected List<String> specialties;
+    protected String location;
+    protected double basePrice;
+    protected double rating;
+    protected int reviewCount;
+    protected boolean isVerified;
+    protected String contactPhone;
+    protected String websiteUrl;
+    protected int yearsOfExperience;
+    protected String email;
 
     // Constructors
     public Photographer() {
         this.photographerId = UUID.randomUUID().toString();
         this.specialties = new ArrayList<>();
-        this.availability = new HashMap<>();
-        this.portfolioImageUrls = new ArrayList<>();
         this.rating = 0.0;
         this.reviewCount = 0;
-        this.isAvailableWeekends = true;
-        this.isAvailableWeekdays = true;
         this.isVerified = false;
     }
 
@@ -179,38 +122,6 @@ public class Photographer implements Serializable {
         this.reviewCount = reviewCount;
     }
 
-    public Map<LocalDate, List<TimeSlot>> getAvailability() {
-        return availability;
-    }
-
-    public void setAvailability(Map<LocalDate, List<TimeSlot>> availability) {
-        this.availability = availability;
-    }
-
-    public List<String> getPortfolioImageUrls() {
-        return portfolioImageUrls;
-    }
-
-    public void setPortfolioImageUrls(List<String> portfolioImageUrls) {
-        this.portfolioImageUrls = portfolioImageUrls;
-    }
-
-    public boolean isAvailableWeekends() {
-        return isAvailableWeekends;
-    }
-
-    public void setAvailableWeekends(boolean availableWeekends) {
-        isAvailableWeekends = availableWeekends;
-    }
-
-    public boolean isAvailableWeekdays() {
-        return isAvailableWeekdays;
-    }
-
-    public void setAvailableWeekdays(boolean availableWeekdays) {
-        isAvailableWeekdays = availableWeekdays;
-    }
-
     public boolean isVerified() {
         return isVerified;
     }
@@ -233,14 +144,6 @@ public class Photographer implements Serializable {
 
     public void setWebsiteUrl(String websiteUrl) {
         this.websiteUrl = websiteUrl;
-    }
-
-    public String getSocialMediaLinks() {
-        return socialMediaLinks;
-    }
-
-    public void setSocialMediaLinks(String socialMediaLinks) {
-        this.socialMediaLinks = socialMediaLinks;
     }
 
     public int getYearsOfExperience() {
@@ -277,8 +180,8 @@ public class Photographer implements Serializable {
             case "CORPORATE":
                 price *= 1.25; // 25% premium for corporate events
                 break;
-            case "PRODUCT":
-                price *= 1.1; // 10% premium for product photography
+            case "PORTRAIT":
+                price *= 1.1; // 10% premium for portrait photography
                 break;
         }
 
@@ -301,68 +204,7 @@ public class Photographer implements Serializable {
         this.rating = totalRating / this.reviewCount;
     }
 
-    /**
-     * Check if photographer is available on a specific date
-     * @param date The date to check
-     * @return true if available, false otherwise
-     */
-    public boolean isAvailableOnDate(LocalDate date) {
-        if (date == null) return false;
-
-        // Check if date is a weekend and if photographer works weekends
-        boolean isWeekend = date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY;
-        if (isWeekend && !isAvailableWeekends) return false;
-        if (!isWeekend && !isAvailableWeekdays) return false;
-
-        // Check if date has specific availability set
-        if (availability.containsKey(date)) {
-            List<TimeSlot> timeSlots = availability.get(date);
-            // Check if there's at least one available time slot
-            return timeSlots.stream().anyMatch(TimeSlot::isAvailable);
-        }
-
-        // No specific availability set for this date, default to available
-        return true;
-    }
-
-    /**
-     * Add a portfolio image URL
-     * @param imageUrl The image URL to add
-     */
-    public void addPortfolioImage(String imageUrl) {
-        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
-            portfolioImageUrls.add(imageUrl);
-        }
-    }
-
-    /**
-     * Set availability for a specific date
-     * @param date The date
-     * @param timeSlots List of time slots for that date
-     */
-    public void setAvailabilityForDate(LocalDate date, List<TimeSlot> timeSlots) {
-        if (date != null && timeSlots != null) {
-            availability.put(date, timeSlots);
-        }
-    }
-
-    /**
-     * Block off a date (mark as unavailable)
-     * @param date The date to block
-     */
-    public void blockDate(LocalDate date) {
-        if (date != null) {
-            // Create a time slot for the entire day marked as unavailable
-            List<TimeSlot> blockedDay = new ArrayList<>();
-            blockedDay.add(new TimeSlot(LocalTime.of(0, 0), LocalTime.of(23, 59), false));
-            availability.put(date, blockedDay);
-        }
-    }
-
-    /**
-     * Convert photographer to file string representation
-     * @return String representation for file storage
-     */
+    // Convert photographer to file string representation
     public String toFileString() {
         StringBuilder sb = new StringBuilder();
         sb.append(photographerId).append(",");
@@ -377,20 +219,9 @@ public class Photographer implements Serializable {
         sb.append(basePrice).append(",");
         sb.append(rating).append(",");
         sb.append(reviewCount).append(",");
-
-        // Availability is complex - we'll store dates in ISO format with time slots
-        // Skip for simplicity - would require custom parsing
-        sb.append("AVAILABILITY_PLACEHOLDER").append(",");
-
-        // Join portfolio URLs with |
-        sb.append(String.join("|", portfolioImageUrls)).append(",");
-
-        sb.append(isAvailableWeekends).append(",");
-        sb.append(isAvailableWeekdays).append(",");
         sb.append(isVerified).append(",");
         sb.append(contactPhone != null ? contactPhone : "").append(",");
         sb.append(websiteUrl != null ? websiteUrl : "").append(",");
-        sb.append(socialMediaLinks != null ? socialMediaLinks : "").append(",");
         sb.append(yearsOfExperience).append(",");
         sb.append(email != null ? email : "");
 
@@ -404,7 +235,7 @@ public class Photographer implements Serializable {
      */
     public static Photographer fromFileString(String fileString) {
         String[] parts = fileString.split(",");
-        if (parts.length < 17) {
+        if (parts.length < 13) {
             return null; // Not enough parts for a valid photographer
         }
 
@@ -429,25 +260,9 @@ public class Photographer implements Serializable {
         photographer.setBasePrice(Double.parseDouble(parts[index++]));
         photographer.setRating(Double.parseDouble(parts[index++]));
         photographer.setReviewCount(Integer.parseInt(parts[index++]));
-
-        // Skip availability parsing (complex)
-        index++; // AVAILABILITY_PLACEHOLDER
-
-        // Parse portfolio URLs
-        String portfolioStr = parts[index++];
-        if (!portfolioStr.isEmpty()) {
-            String[] portfolioArr = portfolioStr.split("\\|");
-            for (String url : portfolioArr) {
-                photographer.getPortfolioImageUrls().add(url);
-            }
-        }
-
-        photographer.setAvailableWeekends(Boolean.parseBoolean(parts[index++]));
-        photographer.setAvailableWeekdays(Boolean.parseBoolean(parts[index++]));
         photographer.setVerified(Boolean.parseBoolean(parts[index++]));
         photographer.setContactPhone(parts[index++]);
         photographer.setWebsiteUrl(parts[index++]);
-        photographer.setSocialMediaLinks(parts[index++]);
         photographer.setYearsOfExperience(Integer.parseInt(parts[index++]));
 
         if (index < parts.length) {

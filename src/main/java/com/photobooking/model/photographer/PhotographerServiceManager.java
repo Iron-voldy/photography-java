@@ -186,63 +186,6 @@ public class PhotographerServiceManager {
     }
 
     /**
-     * Get most popular service by photographer
-     * @param photographerId The photographer ID
-     * @return The most popular service or null if no services
-     */
-    public PhotographerService getMostPopularService(String photographerId) {
-        List<PhotographerService> photographerServices = getServicesByPhotographer(photographerId);
-
-        if (photographerServices.isEmpty()) {
-            return null;
-        }
-
-        return photographerServices.stream()
-                .max((s1, s2) -> Integer.compare(s1.getBookingCount(), s2.getBookingCount()))
-                .orElse(null);
-    }
-
-    /**
-     * Get most profitable service by photographer
-     * @param photographerId The photographer ID
-     * @return The most profitable service or null if no services
-     */
-    public PhotographerService getMostProfitableService(String photographerId) {
-        List<PhotographerService> photographerServices = getServicesByPhotographer(photographerId);
-
-        if (photographerServices.isEmpty()) {
-            return null;
-        }
-
-        return photographerServices.stream()
-                .max((s1, s2) -> {
-                    double revenue1 = s1.getPrice() * s1.getBookingCount();
-                    double revenue2 = s2.getPrice() * s2.getBookingCount();
-                    return Double.compare(revenue1, revenue2);
-                })
-                .orElse(null);
-    }
-
-    /**
-     * Increment booking count for a service
-     * @param serviceId The service ID
-     * @return true if successful, false otherwise
-     */
-    public boolean incrementBookingCount(String serviceId) {
-        if (serviceId == null) {
-            return false;
-        }
-
-        PhotographerService service = getServiceById(serviceId);
-        if (service == null) {
-            return false;
-        }
-
-        service.incrementBookingCount();
-        return updateService(service);
-    }
-
-    /**
      * Create a default set of services for a new photographer
      * @param photographerId The photographer ID
      * @return true if successful, false otherwise
@@ -312,50 +255,5 @@ public class PhotographerServiceManager {
         addService(eventPackage);
 
         return true;
-    }
-
-    /**
-     * Add a feature to a service
-     * @param serviceId The service ID
-     * @param feature The feature to add
-     * @return true if successful, false otherwise
-     */
-    public boolean addFeatureToService(String serviceId, String feature) {
-        if (serviceId == null || feature == null || feature.trim().isEmpty()) {
-            return false;
-        }
-
-        PhotographerService service = getServiceById(serviceId);
-        if (service == null) {
-            return false;
-        }
-
-        service.addFeature(feature);
-        return updateService(service);
-    }
-
-    /**
-     * Remove a feature from a service
-     * @param serviceId The service ID
-     * @param featureIndex The index of the feature to remove
-     * @return true if successful, false otherwise
-     */
-    public boolean removeFeatureFromService(String serviceId, int featureIndex) {
-        if (serviceId == null || featureIndex < 0) {
-            return false;
-        }
-
-        PhotographerService service = getServiceById(serviceId);
-        if (service == null) {
-            return false;
-        }
-
-        List<String> features = service.getFeatures();
-        if (featureIndex >= features.size()) {
-            return false;
-        }
-
-        features.remove(featureIndex);
-        return updateService(service);
     }
 }

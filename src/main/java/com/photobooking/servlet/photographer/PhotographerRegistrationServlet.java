@@ -13,7 +13,6 @@ import javax.servlet.http.HttpSession;
 
 import com.photobooking.model.photographer.Photographer;
 import com.photobooking.model.photographer.PhotographerManager;
-import com.photobooking.model.photographer.PhotographerServiceAddonManager;
 import com.photobooking.model.photographer.PhotographerServiceManager;
 import com.photobooking.model.user.User;
 import com.photobooking.util.ValidationUtil;
@@ -90,7 +89,6 @@ public class PhotographerRegistrationServlet extends HttpServlet {
         String yearsOfExperienceStr = request.getParameter("yearsOfExperience");
         String contactPhone = ValidationUtil.cleanInput(request.getParameter("contactPhone"));
         String websiteUrl = ValidationUtil.cleanInput(request.getParameter("websiteUrl"));
-        String socialMediaLinks = ValidationUtil.cleanInput(request.getParameter("socialMediaLinks"));
         String photographerType = request.getParameter("photographerType");
 
         // Validate input
@@ -158,7 +156,6 @@ public class PhotographerRegistrationServlet extends HttpServlet {
         newPhotographer.setYearsOfExperience(yearsOfExperience);
         newPhotographer.setContactPhone(contactPhone);
         newPhotographer.setWebsiteUrl(websiteUrl);
-        newPhotographer.setSocialMediaLinks(socialMediaLinks);
 
         // Update the photographer
         boolean updateSuccess = photographerManager.updatePhotographer(newPhotographer);
@@ -169,12 +166,9 @@ public class PhotographerRegistrationServlet extends HttpServlet {
             return;
         }
 
-        // Create default services and add-ons
+        // Create default services
         PhotographerServiceManager serviceManager = new PhotographerServiceManager();
         serviceManager.createDefaultServices(newPhotographer.getPhotographerId());
-
-        PhotographerServiceAddonManager addonManager = new PhotographerServiceAddonManager();
-        addonManager.createDefaultAddons(newPhotographer.getPhotographerId());
 
         // Set success message and redirect to dashboard
         session.setAttribute("successMessage", "Photographer profile created successfully!");
