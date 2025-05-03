@@ -1,5 +1,15 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
+<%@ page import="com.photobooking.model.photographer.Photographer" %>
+<%@ page import="java.util.List" %>
+<%@ page import="com.photobooking.util.ValidationUtil" %>
+
+<!-- Add this at the beginning to access Java objects properly -->
+<c:set var="photographers" value="${photographers}" />
+<c:set var="specialties" value="${specialties}" />
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
