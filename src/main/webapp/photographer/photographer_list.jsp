@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <%@ page import="com.photobooking.model.photographer.Photographer" %>
 <%@ page import="java.util.List" %>
@@ -122,6 +123,26 @@
             font-size: 0.8rem;
             margin-bottom: 10px;
         }
+
+        .no-photographers-message {
+            text-align: center;
+            padding: 60px 20px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+        }
+
+        .no-photographers-message h3 {
+            color: #4361ee;
+            margin-bottom: 20px;
+        }
+
+        .no-photographers-message .icon {
+            font-size: 4rem;
+            color: #4361ee;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -215,18 +236,18 @@
                                         <img src="${photographer.portfolioImageUrls[0]}" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
                                     </c:when>
                                     <c:otherwise>
-                                        <img src="https://images.unsplash.com/photo-1531891437562-4301cf35b7e4" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
+                                        <img src="${pageContext.request.contextPath}/assets/images/default-photographer.jpg" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
                                     </c:otherwise>
                                 </c:choose>
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">${photographer.businessName}</h5>
                                         <c:choose>
-                                            <c:when test="${photographer.isPhotographerAvailable}">
-                                                <span class="badge bg-success">Available</span>
+                                            <c:when test="${photographer.verified}">
+                                                <span class="badge bg-success">Verified</span>
                                             </c:when>
                                             <c:otherwise>
-                                                <span class="badge bg-warning text-dark">Limited</span>
+                                                <span class="badge bg-warning text-dark">New</span>
                                             </c:otherwise>
                                         </c:choose>
                                     </div>
@@ -257,7 +278,14 @@
                                         </c:forEach>
                                     </div>
                                     <p class="card-text text-muted small mb-3">
-                                        ${fn:substring(photographer.biography, 0, 100)}...
+                                        <c:choose>
+                                            <c:when test="${fn:length(photographer.biography) > 100}">
+                                                ${fn:substring(photographer.biography, 0, 100)}...
+                                            </c:when>
+                                            <c:otherwise>
+                                                ${photographer.biography}
+                                            </c:otherwise>
+                                        </c:choose>
                                     </p>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="fw-bold text-primary">From $${photographer.basePrice}/hr</span>
@@ -270,123 +298,20 @@
                     </c:forEach>
                 </c:when>
                 <c:otherwise>
-                    <!-- Photographer 1 (Example data - will be replaced by actual database data) -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card photographer-card">
-                            <img src="https://images.unsplash.com/photo-1531891437562-4301cf35b7e4"
-                                 class="card-img-top photographer-thumbnail" alt="John's Photography">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">John's Photography</h5>
-                                    <span class="badge bg-success">Available</span>
-                                </div>
-                                <p class="location-badge">
-                                    <i class="bi bi-geo-alt me-1"></i>New York, NY
-                                </p>
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="rating-stars me-2">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-half"></i>
-                                    </div>
-                                    <span>4.7 (126 reviews)</span>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="badge badge-specialty">Wedding</span>
-                                    <span class="badge badge-specialty">Portrait</span>
-                                    <span class="badge badge-specialty">Event</span>
-                                </div>
-                                <p class="card-text text-muted small mb-3">
-                                    Specializing in candid moments with a modern style. Over 10 years of experience capturing weddings and special events.
-                                </p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-primary">From $250/hr</span>
-                                    <a href="${pageContext.request.contextPath}/photographer/profile?id=p456"
-                                       class="btn btn-outline-primary">View Profile</a>
-                                </div>
+                    <!-- No Photographers Message -->
+                    <div class="col-12">
+                        <div class="no-photographers-message">
+                            <div class="icon">
+                                <i class="bi bi-camera"></i>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Photographer 2 (Example data) -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card photographer-card">
-                            <img src="https://images.unsplash.com/photo-1521038199265-bc482db0f923"
-                                 class="card-img-top photographer-thumbnail" alt="Nature Shots">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">Nature Shots</h5>
-                                    <span class="badge bg-success">Available</span>
-                                </div>
-                                <p class="location-badge">
-                                    <i class="bi bi-geo-alt me-1"></i>Seattle, WA
-                                </p>
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="rating-stars me-2">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star"></i>
-                                    </div>
-                                    <span>4.2 (52 reviews)</span>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="badge badge-specialty">Landscape</span>
-                                    <span class="badge badge-specialty">Wildlife</span>
-                                    <span class="badge badge-specialty">Family</span>
-                                </div>
-                                <p class="card-text text-muted small mb-3">
-                                    Capturing the beauty of nature and families in natural settings. Specializing in outdoor photography with natural light.
-                                </p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-primary">From $180/hr</span>
-                                    <a href="${pageContext.request.contextPath}/photographer/profile?id=p222"
-                                       class="btn btn-outline-primary">View Profile</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Photographer 3 (Example data) -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card photographer-card">
-                            <img src="https://images.unsplash.com/photo-1595126739114-f9de2a949d93"
-                                 class="card-img-top photographer-thumbnail" alt="Studio Perfect">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">Studio Perfect</h5>
-                                    <span class="badge bg-success">Available</span>
-                                </div>
-                                <p class="location-badge">
-                                    <i class="bi bi-geo-alt me-1"></i>Los Angeles, CA
-                                </p>
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="rating-stars me-2">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                    </div>
-                                    <span>5.0 (93 reviews)</span>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="badge badge-specialty">Portrait</span>
-                                    <span class="badge badge-specialty">Corporate</span>
-                                    <span class="badge badge-specialty">Product</span>
-                                </div>
-                                <p class="card-text text-muted small mb-3">
-                                    Professional studio-based photography for corporate clients, products, and model portfolios. High-end retouching available.
-                                </p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-primary">From $300/hr</span>
-                                    <a href="${pageContext.request.contextPath}/photographer/profile?id=p789"
-                                       class="btn btn-outline-primary">View Profile</a>
-                                </div>
-                            </div>
+                            <h3>No Photographers Found</h3>
+                            <p class="text-muted mb-4">
+                                We couldn't find any photographers matching your search criteria.
+                                <br>Try adjusting your filters or check back later.
+                            </p>
+                            <a href="${pageContext.request.contextPath}/photographer/list" class="btn btn-primary">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Clear Filters
+                            </a>
                         </div>
                     </div>
                 </c:otherwise>
@@ -394,40 +319,42 @@
         </div>
 
         <!-- Pagination -->
-        <nav aria-label="Photographer search results pages">
-            <ul class="pagination justify-content-center">
-                <c:if test="${currentPage > 1}">
-                    <li class="page-item">
-                        <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage - 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
-                            <i class="bi bi-chevron-left"></i>
-                        </a>
-                    </li>
-                </c:if>
+        <c:if test="${totalPages > 0}">
+            <nav aria-label="Photographer search results pages">
+                <ul class="pagination justify-content-center">
+                    <c:if test="${currentPage > 1}">
+                        <li class="page-item">
+                            <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage - 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    </c:if>
 
-                <c:forEach begin="1" end="${totalPages}" var="i">
-                    <c:choose>
-                        <c:when test="${currentPage == i}">
-                            <li class="page-item active">
-                                <span class="page-link">${i}</span>
-                            </li>
-                        </c:when>
-                        <c:otherwise>
-                            <li class="page-item">
-                                <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${i}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">${i}</a>
-                            </li>
-                        </c:otherwise>
-                    </c:choose>
-                </c:forEach>
+                    <c:forEach begin="1" end="${totalPages}" var="i">
+                        <c:choose>
+                            <c:when test="${currentPage == i}">
+                                <li class="page-item active">
+                                    <span class="page-link">${i}</span>
+                                </li>
+                            </c:when>
+                            <c:otherwise>
+                                <li class="page-item">
+                                    <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${i}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">${i}</a>
+                                </li>
+                            </c:otherwise>
+                        </c:choose>
+                    </c:forEach>
 
-                <c:if test="${currentPage < totalPages}">
-                    <li class="page-item">
-                        <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage + 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
-                            <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                </c:if>
-            </ul>
-        </nav>
+                    <c:if test="${currentPage < totalPages}">
+                        <li class="page-item">
+                            <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage + 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </c:if>
+                </ul>
+            </nav>
+        </c:if>
 
         <!-- Photography Tips Section -->
         <div class="card mt-5 mb-5">

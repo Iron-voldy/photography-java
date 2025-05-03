@@ -1,5 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -265,6 +268,13 @@
             color: white !important;
             border-radius: 0.25rem;
         }
+
+        .no-data-message {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -307,11 +317,17 @@
                         <div class="col-md-6 col-lg-3">
                             <div class="stat-card stat-card-primary">
                                 <div>
-                                    <div class="stat-value">24</div>
+                                    <div class="stat-value">${totalBookings != null ? totalBookings : 0}</div>
                                     <div class="stat-label">Total Bookings</div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="badge bg-white text-primary">+12% this month</span>
+                                    <span class="badge bg-white text-primary">
+                                        <c:choose>
+                                            <c:when test="${monthlyGrowth > 0}">+${monthlyGrowth}% this month</c:when>
+                                            <c:when test="${monthlyGrowth < 0}">${monthlyGrowth}% this month</c:when>
+                                            <c:otherwise>No change this month</c:otherwise>
+                                        </c:choose>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -320,11 +336,18 @@
                         <div class="col-md-6 col-lg-3">
                             <div class="stat-card stat-card-success">
                                 <div>
-                                    <div class="stat-value">18</div>
+                                    <div class="stat-value">${completedBookings != null ? completedBookings : 0}</div>
                                     <div class="stat-label">Completed</div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="badge bg-white text-success">75% completion rate</span>
+                                    <span class="badge bg-white text-success">
+                                        <c:choose>
+                                            <c:when test="${totalBookings > 0}">
+                                                <fmt:formatNumber value="${completedBookings * 100.0 / totalBookings}" pattern="#" />% completion rate
+                                            </c:when>
+                                            <c:otherwise>0% completion rate</c:otherwise>
+                                        </c:choose>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -333,11 +356,18 @@
                         <div class="col-md-6 col-lg-3">
                             <div class="stat-card stat-card-warning">
                                 <div>
-                                    <div class="stat-value">5</div>
+                                    <div class="stat-value">${upcomingBookingsCount != null ? upcomingBookingsCount : 0}</div>
                                     <div class="stat-label">Upcoming</div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="badge bg-white text-warning">Next: Today</span>
+                                    <span class="badge bg-white text-warning">
+                                        <c:choose>
+                                            <c:when test="${not empty nextBookingDate}">
+                                                Next: <fmt:formatDate value="${nextBookingDate}" pattern="MMM d" />
+                                            </c:when>
+                                            <c:otherwise>No upcoming bookings</c:otherwise>
+                                        </c:choose>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -346,11 +376,11 @@
                         <div class="col-md-6 col-lg-3">
                             <div class="stat-card stat-card-info">
                                 <div>
-                                    <div class="stat-value">4.8</div>
+                                    <div class="stat-value">${photographer.rating != null ? photographer.rating : '0.0'}</div>
                                     <div class="stat-label">Average Rating</div>
                                 </div>
                                 <div class="mt-3">
-                                    <span class="badge bg-white text-info">42 reviews</span>
+                                    <span class="badge bg-white text-info">${photographer.reviewCount != null ? photographer.reviewCount : 0} reviews</span>
                                 </div>
                             </div>
                         </div>
@@ -367,53 +397,35 @@
                                     <a href="${pageContext.request.contextPath}/booking/booking_list.jsp" class="btn-view-all">View All</a>
                                 </div>
                                 <div>
-                                    <!-- Booking 1 -->
-                                    <div class="booking-item">
-                                        <div class="booking-date">
-                                            <div class="booking-day">15</div>
-                                            <div class="booking-month">Dec</div>
-                                        </div>
-                                        <div class="booking-details">
-                                            <h6 class="booking-title">Johnson Wedding</h6>
-                                            <p class="booking-location"><i class="bi bi-geo-alt me-1"></i>Central Park, New York</p>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">2:00 PM - 8:00 PM</span>
-                                                <span class="badge bg-success badge-booking-status">Confirmed</span>
+                                    <c:choose>
+                                        <c:when test="${not empty upcomingBookings}">
+                                            <c:forEach var="booking" items="${upcomingBookings}" begin="0" end="2">
+                                                <div class="booking-item">
+                                                    <div class="booking-date">
+                                                        <div class="booking-day"><fmt:formatDate value="${booking.eventDateTime}" pattern="d" /></div>
+                                                        <div class="booking-month"><fmt:formatDate value="${booking.eventDateTime}" pattern="MMM" /></div>
+                                                    </div>
+                                                    <div class="booking-details">
+                                                        <h6 class="booking-title">${booking.eventType.toString().replace("_", " ")}</h6>
+                                                        <p class="booking-location"><i class="bi bi-geo-alt me-1"></i>${booking.eventLocation}</p>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span class="text-muted">
+                                                                <fmt:formatDate value="${booking.eventDateTime}" pattern="h:mm a" />
+                                                            </span>
+                                                            <span class="badge bg-${booking.status == 'CONFIRMED' ? 'success' : booking.status == 'PENDING' ? 'warning' : 'secondary'} badge-booking-status">
+                                                                ${booking.status}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <div class="no-data-message">
+                                                <i class="bi bi-calendar-x me-2"></i>No upcoming bookings at this time.
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Booking 2 -->
-                                    <div class="booking-item">
-                                        <div class="booking-date">
-                                            <div class="booking-day">20</div>
-                                            <div class="booking-month">Jan</div>
-                                        </div>
-                                        <div class="booking-details">
-                                            <h6 class="booking-title">Corporate Headshots</h6>
-                                            <p class="booking-location"><i class="bi bi-geo-alt me-1"></i>ABC Company, 123 Business St</p>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">9:00 AM - 5:00 PM</span>
-                                                <span class="badge bg-success badge-booking-status">Confirmed</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Booking 3 -->
-                                    <div class="booking-item">
-                                        <div class="booking-date">
-                                            <div class="booking-day">05</div>
-                                            <div class="booking-month">Feb</div>
-                                        </div>
-                                        <div class="booking-details">
-                                            <h6 class="booking-title">Product Photoshoot</h6>
-                                            <p class="booking-location"><i class="bi bi-geo-alt me-1"></i>Studio B, 456 Creative Ave</p>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">10:00 AM - 3:00 PM</span>
-                                                <span class="badge bg-warning text-dark badge-booking-status">Pending</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
 
@@ -433,42 +445,36 @@
                             <div class="dashboard-card mb-4">
                                 <div class="dashboard-card-header">
                                     <h5 class="dashboard-card-title">Recent Reviews</h5>
-                                    <a href="${pageContext.request.contextPath}/review/view_reviews.jsp?photographerId=${sessionScope.user.userId}" class="btn-view-all">View All</a>
+                                    <a href="${pageContext.request.contextPath}/review/view_reviews.jsp?photographerId=${photographer.photographerId}" class="btn-view-all">View All</a>
                                 </div>
                                 <div>
-                                    <!-- Review 1 -->
-                                    <div class="review-item">
-                                        <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="Sarah J." class="review-avatar">
-                                        <div class="review-content">
-                                            <h6 class="review-author">Sarah Johnson</h6>
-                                            <span class="review-date">June 15, 2023</span>
-                                            <div class="review-stars">
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star-fill"></i>
+                                    <c:choose>
+                                        <c:when test="${not empty recentReviews}">
+                                            <c:forEach var="review" items="${recentReviews}" begin="0" end="1">
+                                                <div class="review-item">
+                                                    <img src="${pageContext.request.contextPath}/assets/images/default-avatar.jpg" alt="User" class="review-avatar">
+                                                    <div class="review-content">
+                                                        <h6 class="review-author">Client Review</h6>
+                                                        <span class="review-date"><fmt:formatDate value="${review.reviewDate}" pattern="MMMM d, yyyy" /></span>
+                                                        <div class="review-stars">
+                                                            <c:forEach begin="1" end="${review.rating}">
+                                                                <i class="bi bi-star-fill"></i>
+                                                            </c:forEach>
+                                                            <c:forEach begin="${review.rating + 1}" end="5">
+                                                                <i class="bi bi-star"></i>
+                                                            </c:forEach>
+                                                        </div>
+                                                        <p class="small mb-0">"${fn:substring(review.comment, 0, 100)}${fn:length(review.comment) > 100 ? '...' : ''}"</p>
+                                                    </div>
+                                                </div>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <div class="no-data-message">
+                                                <i class="bi bi-star me-2"></i>No reviews yet. Provide excellent service to get your first review!
                                             </div>
-                                            <p class="small mb-0">"Absolutely amazing! Captured all the special moments at our wedding and made everyone feel comfortable."</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Review 2 -->
-                                    <div class="review-item">
-                                        <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Michael T." class="review-avatar">
-                                        <div class="review-content">
-                                            <h6 class="review-author">Michael Thompson</h6>
-                                            <span class="review-date">May 3, 2023</span>
-                                            <div class="review-stars">
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star-fill"></i>
-                                                <i class="bi bi-star"></i>
-                                            </div>
-                                            <p class="small mb-0">"Very professional and unobtrusive. Quick turnaround time with the photos. Would recommend!"</p>
-                                        </div>
-                                    </div>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
 
@@ -478,49 +484,26 @@
                                     <h5 class="dashboard-card-title">Recent Activity</h5>
                                 </div>
                                 <div>
-                                    <!-- Activity 1 -->
-                                    <div class="activity-item">
-                                        <div class="activity-icon">
-                                            <i class="bi bi-calendar-check"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <h6 class="activity-title">New Booking Received</h6>
-                                            <p class="activity-time">2 hours ago</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Activity 2 -->
-                                    <div class="activity-item">
-                                        <div class="activity-icon">
-                                            <i class="bi bi-star"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <h6 class="activity-title">New Review (5 stars)</h6>
-                                            <p class="activity-time">Yesterday</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Activity 3 -->
-                                    <div class="activity-item">
-                                        <div class="activity-icon">
-                                            <i class="bi bi-upload"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <h6 class="activity-title">Gallery 'Smith Wedding' Uploaded</h6>
-                                            <p class="activity-time">June 10, 2023</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Activity 4 -->
-                                    <div class="activity-item">
-                                        <div class="activity-icon">
-                                            <i class="bi bi-cash-coin"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <h6 class="activity-title">Payment Received - $1,200</h6>
-                                            <p class="activity-time">June 8, 2023</p>
-                                        </div>
-                                    </div>
+                                    <c:choose>
+                                        <c:when test="${not empty recentActivity}">
+                                            <c:forEach var="activity" items="${recentActivity}" begin="0" end="3">
+                                                <div class="activity-item">
+                                                    <div class="activity-icon">
+                                                        <i class="bi bi-${activity.icon}"></i>
+                                                    </div>
+                                                    <div class="activity-content">
+                                                        <h6 class="activity-title">${activity.title}</h6>
+                                                        <p class="activity-time">${activity.timeAgo}</p>
+                                                    </div>
+                                                </div>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <div class="no-data-message">
+                                                <i class="bi bi-activity me-2"></i>No recent activity to display.
+                                            </div>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
 
@@ -573,50 +556,11 @@
                     right: 'dayGridMonth'
                 },
                 height: '100%',
-                events: [
-                    // Existing bookings (confirmed)
-                    {
-                        id: 'booking-1',
-                        title: 'Johnson Wedding',
-                        start: '2023-12-15',
-                        end: '2023-12-16',
-                        backgroundColor: '#2ecc71',
-                        borderColor: '#2ecc71'
-                    },
-                    {
-                        id: 'booking-2',
-                        title: 'Corporate Headshots',
-                        start: '2024-01-20',
-                        backgroundColor: '#2ecc71',
-                        borderColor: '#2ecc71'
-                    },
-                    {
-                        id: 'booking-3',
-                        title: 'Product Photoshoot',
-                        start: '2024-02-05',
-                        backgroundColor: '#f39c12',
-                        borderColor: '#f39c12'
-                    },
-
-                    // Unavailable dates (blocked by photographer)
-                    {
-                        title: 'Unavailable',
-                        start: '2023-12-24',
-                        end: '2023-12-26',
-                        backgroundColor: '#e74c3c',
-                        borderColor: '#e74c3c'
-                    },
-                    {
-                        title: 'Unavailable',
-                        start: '2023-12-31',
-                        backgroundColor: '#e74c3c',
-                        borderColor: '#e74c3c'
-                    }
-                ],
+                events: ${calendarEvents != null ? calendarEvents : '[]'},
                 eventClick: function(info) {
                     // If it's a booking event, redirect to booking details
                     if (info.event.id && info.event.id.startsWith('booking-')) {
-                        const bookingId = info.event.id.replace('booking-', 'b00');
+                        const bookingId = info.event.id.replace('booking-', '');
                         window.location.href = '${pageContext.request.contextPath}/booking/booking_details.jsp?id=' + bookingId;
                     }
                 }

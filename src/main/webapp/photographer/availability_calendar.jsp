@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,6 +108,13 @@
 
         .remove-date:hover {
             color: #c82333;
+        }
+
+        .no-data-message {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-style: italic;
         }
     </style>
 </head>
@@ -216,7 +224,7 @@
                             <div class="upcoming-bookings">
                                 <c:choose>
                                     <c:when test="${not empty upcomingBookings}">
-                                        <c:forEach var="booking" items="${upcomingBookings}">
+                                        <c:forEach var="booking" items="${upcomingBookings}" begin="0" end="2">
                                             <div class="unavailable-date-item">
                                                 <div class="unavailable-date-info">
                                                     <span class="unavailable-date">
@@ -230,32 +238,8 @@
                                         </c:forEach>
                                     </c:when>
                                     <c:otherwise>
-                                        <!-- Sample bookings if none in database -->
-                                        <div class="unavailable-date-item">
-                                            <div class="unavailable-date-info">
-                                                <span class="unavailable-date">Dec 15, 2023</span>
-                                                <span class="unavailable-time">Wedding Photography</span>
-                                            </div>
-                                            <a href="${pageContext.request.contextPath}/booking/booking_details.jsp?id=b001"
-                                               class="btn btn-sm btn-outline-primary">Details</a>
-                                        </div>
-
-                                        <div class="unavailable-date-item">
-                                            <div class="unavailable-date-info">
-                                                <span class="unavailable-date">Jan 20, 2024</span>
-                                                <span class="unavailable-time">Corporate Headshots</span>
-                                            </div>
-                                            <a href="${pageContext.request.contextPath}/booking/booking_details.jsp?id=b004"
-                                               class="btn btn-sm btn-outline-primary">Details</a>
-                                        </div>
-
-                                        <div class="unavailable-date-item">
-                                            <div class="unavailable-date-info">
-                                                <span class="unavailable-date">Feb 5, 2024</span>
-                                                <span class="unavailable-time">Product Photoshoot</span>
-                                            </div>
-                                            <a href="${pageContext.request.contextPath}/booking/booking_details.jsp?id=b005"
-                                               class="btn btn-sm btn-outline-primary">Details</a>
+                                        <div class="no-data-message">
+                                            <i class="bi bi-calendar-x me-2"></i>No upcoming bookings at this time.
                                         </div>
                                     </c:otherwise>
                                 </c:choose>
@@ -376,35 +360,8 @@
                                 </c:forEach>
                             </c:when>
                             <c:otherwise>
-                                <!-- Sample unavailable dates if none in database -->
-                                <div class="unavailable-date-item">
-                                    <div class="unavailable-date-info">
-                                        <span class="unavailable-date">Dec 24, 2023</span>
-                                        <span class="unavailable-time">All Day • Holiday</span>
-                                    </div>
-                                    <div class="remove-date" data-date="2023-12-24">
-                                        <i class="bi bi-x-circle"></i>
-                                    </div>
-                                </div>
-
-                                <div class="unavailable-date-item">
-                                    <div class="unavailable-date-info">
-                                        <span class="unavailable-date">Dec 25, 2023</span>
-                                        <span class="unavailable-time">All Day • Holiday</span>
-                                    </div>
-                                    <div class="remove-date" data-date="2023-12-25">
-                                        <i class="bi bi-x-circle"></i>
-                                    </div>
-                                </div>
-
-                                <div class="unavailable-date-item">
-                                    <div class="unavailable-date-info">
-                                        <span class="unavailable-date">Dec 31, 2023</span>
-                                        <span class="unavailable-time">All Day • Personal</span>
-                                    </div>
-                                    <div class="remove-date" data-date="2023-12-31">
-                                        <i class="bi bi-x-circle"></i>
-                                    </div>
+                                <div class="no-data-message">
+                                    <i class="bi bi-calendar-check me-2"></i>No blocked dates set.
                                 </div>
                             </c:otherwise>
                         </c:choose>
@@ -442,54 +399,7 @@
                 selectable: true,
                 selectMirror: true,
                 dayMaxEvents: true,
-                events: ${calendarEventsJson != null ? calendarEventsJson : '[
-                    // Default events if none in database
-                    // Existing bookings (confirmed) - cannot be changed
-                    {
-                        id: "booking-1",
-                        title: "Wedding Photography",
-                        start: "2023-12-15",
-                        end: "2023-12-16",
-                        className: "booking-event",
-                        backgroundColor: "#28a745",
-                        borderColor: "#28a745"
-                    },
-                    {
-                        id: "booking-2",
-                        title: "Corporate Headshots",
-                        start: "2024-01-20",
-                        className: "booking-event",
-                        backgroundColor: "#28a745",
-                        borderColor: "#28a745"
-                    },
-                    {
-                        id: "booking-3",
-                        title: "Product Photoshoot",
-                        start: "2024-02-05",
-                        className: "booking-event",
-                        backgroundColor: "#ffc107",
-                        borderColor: "#ffc107"
-                    },
-
-                    // Unavailable dates (blocked by photographer)
-                    {
-                        id: "unavailable-1",
-                        title: "Unavailable",
-                        start: "2023-12-24",
-                        end: "2023-12-26",
-                        className: "unavailable-event",
-                        backgroundColor: "#dc3545",
-                        borderColor: "#dc3545"
-                    },
-                    {
-                        id: "unavailable-2",
-                        title: "Unavailable",
-                        start: "2023-12-31",
-                        className: "unavailable-event",
-                        backgroundColor: "#dc3545",
-                        borderColor: "#dc3545"
-                    }
-                ]'},
+                events: ${calendarEventsJson != null ? calendarEventsJson : '[]'},
                 dateClick: function(info) {
                     selectDate(info.dateStr);
                 },
@@ -498,11 +408,8 @@
 
                     if (eventType === 'booking') {
                         // Redirect to booking details
-                        const bookingId = info.event.id.replace('booking-', 'b00');
+                        const bookingId = info.event.id.replace('booking-', '');
                         window.location.href = '${pageContext.request.contextPath}/booking/booking_details.jsp?id=' + bookingId;
-                    } else if (eventType === 'unavailable') {
-                        // Show unavailable date details
-                        selectDate(info.event.startStr);
                     }
                 }
             });
@@ -521,35 +428,17 @@
                 document.getElementById('selectedDateContainer').style.display = 'block';
                 document.getElementById('emptyStateMessage').style.display = 'none';
 
-                // Check if date is already unavailable
-                let isUnavailable = false;
-                const events = calendar.getEvents();
-
-                events.forEach(function(event) {
-                    const eventStart = event.start.toISOString().split('T')[0];
-                    const eventEnd = event.end ? event.end.toISOString().split('T')[0] : null;
-
-                    if (event.id && event.id.startsWith('unavailable')) {
-                        if (eventStart === dateStr ||
-                            (eventEnd && dateStr >= eventStart && dateStr < eventEnd)) {
-                            isUnavailable = true;
-
-                            // If unavailable, select all time slots
-                            document.querySelectorAll('.time-slot').forEach(function(slot) {
-                                slot.classList.add('selected');
-                            });
-                        }
-                    }
+                // Reset time slots
+                document.querySelectorAll('.time-slot').forEach(function(slot) {
+                    slot.classList.remove('selected');
                 });
 
-                // If date is not unavailable, reset time slots
-                if (!isUnavailable) {
-                    document.querySelectorAll('.time-slot').forEach(function(slot) {
-                        slot.classList.remove('selected');
-                    });
-                }
+                // Check availability for this date
+                fetchAvailability(dateStr);
+            }
 
-                // Call backend to get time slots for this date
+            // Fetch availability for a date
+            function fetchAvailability(dateStr) {
                 fetch('${pageContext.request.contextPath}/photographer/get-availability?date=' + dateStr)
                     .then(response => response.json())
                     .then(data => {
@@ -557,16 +446,14 @@
                             // Update time slots based on available times
                             document.querySelectorAll('.time-slot').forEach(function(slot) {
                                 const timeSlot = slot.getAttribute('data-time');
-                                if (data.availableTimeSlots.includes(timeSlot)) {
-                                    slot.classList.remove('selected');
-                                } else {
+                                if (!data.availableTimeSlots.includes(timeSlot)) {
                                     slot.classList.add('selected');
                                 }
                             });
                         }
                     })
                     .catch(error => {
-                        console.log('Error fetching availability:', error);
+                        console.error('Error fetching availability:', error);
                     });
             }
 
@@ -669,56 +556,10 @@
                 timeContainer.style.display = this.checked ? 'none' : 'block';
             });
 
-            // Block Dates Form Submission
-            document.getElementById('blockDatesForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const formData = new FormData(this);
-
-                fetch('${pageContext.request.contextPath}/photographer/block-dates', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Close modal
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('blockDatesModal'));
-                        modal.hide();
-
-                        // Reset form
-                        this.reset();
-
-                        // Show success message
-                        alert("Dates blocked successfully!");
-
-                        // Refresh calendar
-                        calendar.refetchEvents();
-
-                        // Add to unavailable dates list
-                        if (data.blockedDates) {
-                            data.blockedDates.forEach(function(blockedDate) {
-                                addUnavailableDay(blockedDate.date, blockedDate.reason);
-                            });
-                        }
-                    } else {
-                        alert("Error blocking dates: " + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error blocking dates:', error);
-                    alert("An error occurred while blocking dates.");
-                });
-            });
-
-            // Remove unavailable date
-            const removeButtons = document.querySelectorAll('.remove-date');
-            removeButtons.forEach(function(button) {
+            // Remove unavailable date functionality
+            document.querySelectorAll('.remove-date').forEach(function(button) {
                 button.addEventListener('click', function() {
                     const dateId = this.getAttribute('data-date-id');
-                    const date = this.getAttribute('data-date');
-                    const dateToRemove = dateId || date; // Use date ID if available, otherwise use date string
-
                     if (confirm("Are you sure you want to remove this unavailable date?")) {
                         // Call backend to remove date
                         fetch('${pageContext.request.contextPath}/photographer/remove-blocked-date', {
@@ -726,7 +567,7 @@
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded',
                             },
-                            body: 'dateId=' + dateToRemove
+                            body: 'dateId=' + dateId
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -750,60 +591,6 @@
                     }
                 });
             });
-
-            // Helper function to add unavailable day to the list
-            function addUnavailableDay(dateText, reason = '') {
-                const unavailableDatesList = document.getElementById('unavailableDatesList');
-                const listItem = document.createElement('div');
-                listItem.classList.add('unavailable-date-item');
-
-                const timeText = reason ? `All Day • ${reason}` : 'All Day';
-
-                listItem.innerHTML = `
-                    <div class="unavailable-date-info">
-                        <span class="unavailable-date">${dateText}</span>
-                        <span class="unavailable-time">${timeText}</span>
-                    </div>
-                    <div class="remove-date" data-date="${dateText}">
-                        <i class="bi bi-x-circle"></i>
-                    </div>
-                `;
-
-                unavailableDatesList.prepend(listItem);
-
-                // Add click event to the new remove button
-                listItem.querySelector('.remove-date').addEventListener('click', function() {
-                    if (confirm("Are you sure you want to remove this unavailable date?")) {
-                        // Call backend to remove date
-                        fetch('${pageContext.request.contextPath}/photographer/remove-blocked-date', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                            },
-                            body: 'date=' + dateText
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Remove from UI
-                                listItem.remove();
-
-                                // Refresh calendar
-                                calendar.refetchEvents();
-
-                                // Show success message
-                                alert("Date has been removed from unavailable dates.");
-                            } else {
-                                alert("Error removing date: " + data.message);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error removing date:', error);
-                            alert("An error occurred while removing the date.");
-                        });
-                    }
-                });
-            }
         });
     </script>
 </body>
