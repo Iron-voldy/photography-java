@@ -13,10 +13,26 @@ import java.util.logging.Level;
  */
 public class FileHandler {
     private static final Logger LOGGER = Logger.getLogger(FileHandler.class.getName());
+    private static final String DATA_DIRECTORY = "data";
 
     // Prevent instantiation
     private FileHandler() {
         throw new AssertionError("Cannot be instantiated");
+    }
+
+    /**
+     * Initialize the data directory
+     */
+    static {
+        File directory = new File(DATA_DIRECTORY);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (created) {
+                LOGGER.info("Created data directory: " + directory.getAbsolutePath());
+            } else {
+                LOGGER.warning("Failed to create data directory: " + directory.getAbsolutePath());
+            }
+        }
     }
 
     /**
@@ -26,11 +42,20 @@ public class FileHandler {
      */
     public static boolean ensureFileExists(String filePath) {
         try {
-            File file = new File(filePath);
+            // Add data directory prefix if not already present
+            String fullPath = filePath;
+            if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+                fullPath = DATA_DIRECTORY + File.separator + filePath;
+            }
+
+            File file = new File(fullPath);
 
             // Create parent directory if it doesn't exist
-            if (file.getParentFile() != null) {
-                file.getParentFile().mkdirs();
+            if (file.getParentFile() != null && !file.getParentFile().exists()) {
+                boolean dirCreated = file.getParentFile().mkdirs();
+                if (!dirCreated) {
+                    LOGGER.warning("Could not create directory: " + file.getParentFile().getAbsolutePath());
+                }
             }
 
             // Create file if it doesn't exist
@@ -38,6 +63,8 @@ public class FileHandler {
                 boolean created = file.createNewFile();
                 if (created) {
                     LOGGER.info("Created new file: " + filePath);
+                } else {
+                    LOGGER.warning("Could not create file: " + filePath);
                 }
                 return created;
             }
@@ -57,14 +84,20 @@ public class FileHandler {
      */
     public static boolean writeToFile(String filePath, String content, boolean append) {
         try {
+            // Add data directory prefix if not already present
+            String fullPath = filePath;
+            if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+                fullPath = DATA_DIRECTORY + File.separator + filePath;
+            }
+
             // Ensure file exists
-            if (!ensureFileExists(filePath)) {
+            if (!ensureFileExists(fullPath)) {
                 LOGGER.warning("Could not create file: " + filePath);
                 return false;
             }
 
             // Write content
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, append))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fullPath, append))) {
                 writer.write(content);
             }
 
@@ -85,7 +118,13 @@ public class FileHandler {
         List<String> lines = new ArrayList<>();
 
         try {
-            File file = new File(filePath);
+            // Add data directory prefix if not already present
+            String fullPath = filePath;
+            if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+                fullPath = DATA_DIRECTORY + File.separator + filePath;
+            }
+
+            File file = new File(fullPath);
 
             // Check if file exists
             if (!file.exists()) {
@@ -114,7 +153,13 @@ public class FileHandler {
      */
     public static String readFileContent(String filePath) {
         try {
-            File file = new File(filePath);
+            // Add data directory prefix if not already present
+            String fullPath = filePath;
+            if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+                fullPath = DATA_DIRECTORY + File.separator + filePath;
+            }
+
+            File file = new File(fullPath);
 
             // Check if file exists
             if (!file.exists()) {
@@ -151,7 +196,13 @@ public class FileHandler {
      * @return true if file was deleted or didn't exist
      */
     public static boolean deleteFile(String filePath) {
-        File file = new File(filePath);
+        // Add data directory prefix if not already present
+        String fullPath = filePath;
+        if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+            fullPath = DATA_DIRECTORY + File.separator + filePath;
+        }
+
+        File file = new File(fullPath);
 
         if (!file.exists()) {
             LOGGER.info("File does not exist: " + filePath);
@@ -174,7 +225,13 @@ public class FileHandler {
      * @return true if directory exists or was created successfully
      */
     public static boolean createDirectory(String directoryPath) {
-        File directory = new File(directoryPath);
+        // Add data directory prefix if not already present
+        String fullPath = directoryPath;
+        if (!directoryPath.startsWith(DATA_DIRECTORY + File.separator) && !new File(directoryPath).isAbsolute()) {
+            fullPath = DATA_DIRECTORY + File.separator + directoryPath;
+        }
+
+        File directory = new File(fullPath);
 
         if (!directory.exists()) {
             boolean created = directory.mkdirs();
@@ -195,7 +252,13 @@ public class FileHandler {
      * @return true if file exists, false otherwise
      */
     public static boolean fileExists(String filePath) {
-        return new File(filePath).exists();
+        // Add data directory prefix if not already present
+        String fullPath = filePath;
+        if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+            fullPath = DATA_DIRECTORY + File.separator + filePath;
+        }
+
+        return new File(fullPath).exists();
     }
 
     /**
@@ -207,11 +270,24 @@ public class FileHandler {
     public static List<List<String>> readCSV(String filePath, String delimiter) {
         List<List<String>> data = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(delimiter);
-                data.add(Arrays.asList(values));
+        try {
+            // Add data directory prefix if not already present
+            String fullPath = filePath;
+            if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+                fullPath = DATA_DIRECTORY + File.separator + filePath;
+            }
+
+            if (!fileExists(fullPath)) {
+                ensureFileExists(fullPath);
+                return data;
+            }
+
+            try (BufferedReader br = new BufferedReader(new FileReader(fullPath))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] values = line.split(delimiter);
+                    data.add(Arrays.asList(values));
+                }
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Error reading CSV file: " + filePath, e);
@@ -228,13 +304,23 @@ public class FileHandler {
      * @return true if write was successful, false otherwise
      */
     public static boolean writeCSV(String filePath, List<List<String>> data, String delimiter) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
-            for (List<String> row : data) {
-                String csvLine = String.join(delimiter, row);
-                bw.write(csvLine);
-                bw.newLine();
+        try {
+            // Add data directory prefix if not already present
+            String fullPath = filePath;
+            if (!filePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(filePath).isAbsolute()) {
+                fullPath = DATA_DIRECTORY + File.separator + filePath;
             }
-            return true;
+
+            ensureFileExists(fullPath);
+
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(fullPath))) {
+                for (List<String> row : data) {
+                    String csvLine = String.join(delimiter, row);
+                    bw.write(csvLine);
+                    bw.newLine();
+                }
+                return true;
+            }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Error writing CSV file: " + filePath, e);
             return false;
@@ -248,15 +334,33 @@ public class FileHandler {
      * @return true if move was successful, false otherwise
      */
     public static boolean moveFile(String sourcePath, String destinationPath) {
-        File sourceFile = new File(sourcePath);
-        File destFile = new File(destinationPath);
+        // Add data directory prefix if not already present
+        String fullSourcePath = sourcePath;
+        if (!sourcePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(sourcePath).isAbsolute()) {
+            fullSourcePath = DATA_DIRECTORY + File.separator + sourcePath;
+        }
+
+        String fullDestPath = destinationPath;
+        if (!destinationPath.startsWith(DATA_DIRECTORY + File.separator) && !new File(destinationPath).isAbsolute()) {
+            fullDestPath = DATA_DIRECTORY + File.separator + destinationPath;
+        }
+
+        File sourceFile = new File(fullSourcePath);
+        File destFile = new File(fullDestPath);
 
         // Ensure destination directory exists
         if (destFile.getParentFile() != null) {
             destFile.getParentFile().mkdirs();
         }
 
-        return sourceFile.renameTo(destFile);
+        boolean success = sourceFile.renameTo(destFile);
+        if (success) {
+            LOGGER.info("Successfully moved file from " + sourcePath + " to " + destinationPath);
+        } else {
+            LOGGER.warning("Failed to move file from " + sourcePath + " to " + destinationPath);
+        }
+
+        return success;
     }
 
     /**
@@ -266,18 +370,47 @@ public class FileHandler {
      * @return true if copy was successful, false otherwise
      */
     public static boolean copyFile(String sourcePath, String destinationPath) {
-        try (
-                FileInputStream inputStream = new FileInputStream(new File(sourcePath));
-                FileOutputStream outputStream = new FileOutputStream(new File(destinationPath))
-        ) {
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
+        try {
+            // Add data directory prefix if not already present
+            String fullSourcePath = sourcePath;
+            if (!sourcePath.startsWith(DATA_DIRECTORY + File.separator) && !new File(sourcePath).isAbsolute()) {
+                fullSourcePath = DATA_DIRECTORY + File.separator + sourcePath;
             }
-            return true;
+
+            String fullDestPath = destinationPath;
+            if (!destinationPath.startsWith(DATA_DIRECTORY + File.separator) && !new File(destinationPath).isAbsolute()) {
+                fullDestPath = DATA_DIRECTORY + File.separator + destinationPath;
+            }
+
+            File sourceFile = new File(fullSourcePath);
+            File destFile = new File(fullDestPath);
+
+            // Ensure source file exists
+            if (!sourceFile.exists()) {
+                LOGGER.warning("Source file does not exist: " + sourcePath);
+                return false;
+            }
+
+            // Ensure destination directory exists
+            if (destFile.getParentFile() != null) {
+                destFile.getParentFile().mkdirs();
+            }
+
+            try (
+                    FileInputStream inputStream = new FileInputStream(sourceFile);
+                    FileOutputStream outputStream = new FileOutputStream(destFile)
+            ) {
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = inputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, length);
+                }
+
+                LOGGER.info("Successfully copied file from " + sourcePath + " to " + destinationPath);
+                return true;
+            }
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Error copying file", e);
+            LOGGER.log(Level.SEVERE, "Error copying file from " + sourcePath + " to " + destinationPath, e);
             return false;
         }
     }

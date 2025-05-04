@@ -4,11 +4,14 @@ import com.photobooking.util.FileHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Manages service packages offered by photographers
  */
 public class PhotographerServiceManager {
+    private static final Logger LOGGER = Logger.getLogger(PhotographerServiceManager.class.getName());
     private static final String SERVICE_FILE = "services.txt";
     private List<PhotographerService> services;
 
@@ -24,6 +27,9 @@ public class PhotographerServiceManager {
      * @return List of services
      */
     private List<PhotographerService> loadServices() {
+        // Ensure file exists before loading
+        FileHandler.ensureFileExists(SERVICE_FILE);
+
         List<String> lines = FileHandler.readLines(SERVICE_FILE);
         List<PhotographerService> loadedServices = new ArrayList<>();
 
@@ -36,6 +42,7 @@ public class PhotographerServiceManager {
             }
         }
 
+        LOGGER.info("Loaded " + loadedServices.size() + " services from file");
         return loadedServices;
     }
 
@@ -45,16 +52,40 @@ public class PhotographerServiceManager {
      */
     private boolean saveServices() {
         try {
+            // First create a backup of the existing file
+            String backupFile = SERVICE_FILE + ".bak";
+            if (FileHandler.fileExists(SERVICE_FILE)) {
+                FileHandler.copyFile(SERVICE_FILE, backupFile);
+            }
+
             // Delete existing file content
             FileHandler.deleteFile(SERVICE_FILE);
 
-            // Write each service to file
+            // Ensure file exists after deletion
+            FileHandler.ensureFileExists(SERVICE_FILE);
+
+            // Write all services at once for better performance
+            StringBuilder contentToWrite = new StringBuilder();
             for (PhotographerService service : services) {
-                FileHandler.appendLine(SERVICE_FILE, service.toFileString());
+                contentToWrite.append(service.toFileString()).append(System.lineSeparator());
             }
-            return true;
+
+            // Write all content at once
+            boolean result = FileHandler.writeToFile(SERVICE_FILE, contentToWrite.toString(), false);
+
+            if (result) {
+                LOGGER.info("Successfully saved " + services.size() + " services to file");
+            } else {
+                LOGGER.warning("Failed to save services to file");
+                // Restore from backup if save failed
+                if (FileHandler.fileExists(backupFile)) {
+                    FileHandler.copyFile(backupFile, SERVICE_FILE);
+                }
+            }
+
+            return result;
         } catch (Exception e) {
-            System.err.println("Error saving services: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error saving services: " + e.getMessage(), e);
             return false;
         }
     }
@@ -200,6 +231,8 @@ public class PhotographerServiceManager {
             return false; // Photographer already has services
         }
 
+        LOGGER.info("Creating default services for photographer ID: " + photographerId);
+
         // Create wedding package
         PhotographerService weddingPackage = new PhotographerService(
                 photographerId,
@@ -254,6 +287,7 @@ public class PhotographerServiceManager {
         eventPackage.addFeature("Quick turnaround (3 business days)");
         addService(eventPackage);
 
+        LOGGER.info("Successfully created default services for photographer ID: " + photographerId);
         return true;
     }
 }

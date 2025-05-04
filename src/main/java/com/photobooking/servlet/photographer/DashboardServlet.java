@@ -2,6 +2,7 @@ package com.photobooking.servlet.photographer;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -18,8 +19,11 @@ import com.photobooking.model.photographer.PhotographerServiceManager;
 import com.photobooking.model.review.Review;
 import com.photobooking.model.review.ReviewManager;
 import com.photobooking.model.user.User;
+import com.photobooking.util.FileHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Servlet for photographer dashboard display
@@ -27,6 +31,14 @@ import com.google.gson.JsonObject;
 @WebServlet("/photographer/dashboard")
 public class DashboardServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(DashboardServlet.class.getName());
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        // Initialize necessary data directories and files
+        FileHandler.createDirectory("data");
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -46,48 +58,101 @@ public class DashboardServlet extends HttpServlet {
             return;
         }
 
-        String photographerId = currentUser.getUserId();
+        // Ensure files exist
+        FileHandler.ensureFileExists("photographers.txt");
+        FileHandler.ensureFileExists("services.txt");
+
+        String userId = currentUser.getUserId();
 
         // Get photographer profile
         PhotographerManager photographerManager = new PhotographerManager();
-        Photographer photographer = photographerManager.getPhotographerByUserId(photographerId);
+        Photographer photographer = photographerManager.getPhotographerByUserId(userId);
 
+        // If photographer profile doesn't exist, create one
         if (photographer == null) {
-            session.setAttribute("errorMessage", "Photographer profile not found");
-            response.sendRedirect(request.getContextPath() + "/photographer/register.jsp");
-            return;
-        }
+            try {
+                photographer = new Photographer();
+                photographer.setUserId(userId);
+                photographer.setBusinessName(currentUser.getFullName() + "'s Photography");
+                photographer.setBiography("Professional photographer offering various photography services.");
+                photographer.setSpecialties(new ArrayList<>());
+                photographer.getSpecialties().add("General");
+                photographer.setLocation("Not specified");
+                photographer.setBasePrice(100.0); // Default base price
+                photographer.setEmail(currentUser.getEmail());
 
-        // Get dashboard statistics
-        BookingManager bookingManager = new BookingManager();
-        List<Booking> upcomingBookings = bookingManager.getUpcomingBookings(photographerId, true);
-        List<Booking> allBookings = bookingManager.getBookingsByPhotographer(photographerId);
+                // Save the photographer profile
+                boolean profileCreated = photographerManager.addPhotographer(photographer);
 
-        // Calculate statistics
-        int totalBookings = allBookings.size();
-        int completedBookings = 0;
-        for (Booking booking : allBookings) {
-            if (booking.getStatus() == Booking.BookingStatus.COMPLETED) {
-                completedBookings++;
+                if (profileCreated) {
+                    LOGGER.info("Created missing photographer profile for user: " + currentUser.getUsername());
+
+                    try {
+                        // Create default services for the photographer
+                        PhotographerServiceManager serviceManager = new PhotographerServiceManager();
+                        serviceManager.createDefaultServices(photographer.getPhotographerId());
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Error creating default services: " + e.getMessage(), e);
+                    }
+
+                    // Set photographerId in session
+                    session.setAttribute("photographerId", photographer.getPhotographerId());
+                } else {
+                    LOGGER.log(Level.SEVERE, "Failed to create photographer profile for user: " + currentUser.getUsername());
+                    session.setAttribute("errorMessage", "Failed to create photographer profile. Please contact support.");
+                    response.sendRedirect(request.getContextPath() + "/user/dashboard.jsp");
+                    return;
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error creating photographer profile: " + e.getMessage(), e);
+                session.setAttribute("errorMessage", "Error creating photographer profile: " + e.getMessage());
+                response.sendRedirect(request.getContextPath() + "/user/dashboard.jsp");
+                return;
+            }
+        } else {
+            // Set photographerId in session if it's not already there
+            if (session.getAttribute("photographerId") == null) {
+                session.setAttribute("photographerId", photographer.getPhotographerId());
             }
         }
 
-        // Get recent reviews
-        ReviewManager reviewManager = new ReviewManager();
-        List<Review> recentReviews = reviewManager.getPhotographerReviews(photographer.getPhotographerId());
+        try {
+            // Get dashboard statistics
+            BookingManager bookingManager = new BookingManager();
+            List<Booking> upcomingBookings = bookingManager.getUpcomingBookings(userId, true);
+            List<Booking> allBookings = bookingManager.getBookingsByPhotographer(userId);
 
-        // Prepare calendar events
-        JsonArray calendarEvents = prepareCalendarEvents(upcomingBookings, bookingManager);
+            // Calculate statistics
+            int totalBookings = allBookings.size();
+            int completedBookings = 0;
+            for (Booking booking : allBookings) {
+                if (booking.getStatus() == Booking.BookingStatus.COMPLETED) {
+                    completedBookings++;
+                }
+            }
 
-        // Set attributes for JSP
-        request.setAttribute("photographer", photographer);
-        request.setAttribute("upcomingBookings", upcomingBookings);
-        request.setAttribute("totalBookings", totalBookings);
-        request.setAttribute("completedBookings", completedBookings);
-        request.setAttribute("recentReviews", recentReviews);
-        request.setAttribute("calendarEvents", calendarEvents.toString());
+            // Get recent reviews
+            ReviewManager reviewManager = new ReviewManager();
+            List<Review> recentReviews = reviewManager.getPhotographerReviews(photographer.getPhotographerId());
 
-        request.getRequestDispatcher("/photographer/dashboard.jsp").forward(request, response);
+            // Prepare calendar events
+            JsonArray calendarEvents = prepareCalendarEvents(upcomingBookings, bookingManager);
+
+            // Set attributes for JSP
+            request.setAttribute("photographer", photographer);
+            request.setAttribute("upcomingBookings", upcomingBookings);
+            request.setAttribute("upcomingBookingsCount", upcomingBookings.size());
+            request.setAttribute("totalBookings", totalBookings);
+            request.setAttribute("completedBookings", completedBookings);
+            request.setAttribute("recentReviews", recentReviews);
+            request.setAttribute("calendarEvents", calendarEvents.toString());
+
+            request.getRequestDispatcher("/photographer/dashboard.jsp").forward(request, response);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error loading dashboard data: " + e.getMessage(), e);
+            session.setAttribute("errorMessage", "Error loading dashboard data: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/user/dashboard.jsp");
+        }
     }
 
     private JsonArray prepareCalendarEvents(List<Booking> bookings, BookingManager bookingManager) {

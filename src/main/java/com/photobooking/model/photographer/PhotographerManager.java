@@ -5,11 +5,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Manages photographer-related operations for the Event Photography System
  */
 public class PhotographerManager {
+    private static final Logger LOGGER = Logger.getLogger(PhotographerManager.class.getName());
     private static final String PHOTOGRAPHER_FILE = "photographers.txt";
     private List<Photographer> photographers;
 
@@ -25,6 +28,9 @@ public class PhotographerManager {
      * @return List of photographers
      */
     private List<Photographer> loadPhotographers() {
+        // Ensure file exists before loading
+        FileHandler.ensureFileExists(PHOTOGRAPHER_FILE);
+
         List<String> lines = FileHandler.readLines(PHOTOGRAPHER_FILE);
         List<Photographer> loadedPhotographers = new ArrayList<>();
 
@@ -45,6 +51,7 @@ public class PhotographerManager {
             }
         }
 
+        LOGGER.info("Loaded " + loadedPhotographers.size() + " photographers from file");
         return loadedPhotographers;
     }
 
@@ -54,16 +61,40 @@ public class PhotographerManager {
      */
     private boolean savePhotographers() {
         try {
+            // First create a backup of the existing file
+            String backupFile = PHOTOGRAPHER_FILE + ".bak";
+            if (FileHandler.fileExists(PHOTOGRAPHER_FILE)) {
+                FileHandler.copyFile(PHOTOGRAPHER_FILE, backupFile);
+            }
+
             // Delete existing file content
             FileHandler.deleteFile(PHOTOGRAPHER_FILE);
 
+            // Ensure file exists after deletion
+            FileHandler.ensureFileExists(PHOTOGRAPHER_FILE);
+
             // Write each photographer to file
+            StringBuilder contentToWrite = new StringBuilder();
             for (Photographer photographer : photographers) {
-                FileHandler.appendLine(PHOTOGRAPHER_FILE, photographer.toFileString());
+                contentToWrite.append(photographer.toFileString()).append(System.lineSeparator());
             }
-            return true;
+
+            // Write all content at once
+            boolean result = FileHandler.writeToFile(PHOTOGRAPHER_FILE, contentToWrite.toString(), false);
+
+            if (result) {
+                LOGGER.info("Successfully saved " + photographers.size() + " photographers to file");
+            } else {
+                LOGGER.warning("Failed to save photographers to file");
+                // Restore from backup if save failed
+                if (FileHandler.fileExists(backupFile)) {
+                    FileHandler.copyFile(backupFile, PHOTOGRAPHER_FILE);
+                }
+            }
+
+            return result;
         } catch (Exception e) {
-            System.err.println("Error saving photographers: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error saving photographers: " + e.getMessage(), e);
             return false;
         }
     }

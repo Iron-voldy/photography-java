@@ -10,6 +10,8 @@ import javax.servlet.http.HttpSession;
 
 import com.photobooking.model.user.User;
 import com.photobooking.model.user.UserManager;
+import com.photobooking.model.photographer.Photographer;
+import com.photobooking.model.photographer.PhotographerManager;
 import com.photobooking.util.ValidationUtil;
 
 /**
@@ -67,6 +69,16 @@ public class LoginServlet extends HttpServlet {
                 session.setAttribute("userId", user.getUserId());
                 session.setAttribute("username", user.getUsername());
                 session.setAttribute("userType", user.getUserType().name().toLowerCase());
+
+                // If user is a photographer, get and store their photographer profile ID
+                if (user.getUserType() == User.UserType.PHOTOGRAPHER) {
+                    PhotographerManager photographerManager = new PhotographerManager();
+                    Photographer photographer = photographerManager.getPhotographerByUserId(user.getUserId());
+
+                    if (photographer != null) {
+                        session.setAttribute("photographerId", photographer.getPhotographerId());
+                    }
+                }
 
                 // Log successful login
                 System.out.println("User logged in successfully: " + username + " (" + user.getUserType() + ")");

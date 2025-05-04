@@ -10,7 +10,14 @@ import javax.servlet.http.HttpSession;
 
 import com.photobooking.model.user.User;
 import com.photobooking.model.user.UserManager;
+import com.photobooking.model.photographer.Photographer;
+import com.photobooking.model.photographer.PhotographerManager;
+import com.photobooking.model.photographer.PhotographerServiceManager;
 import com.photobooking.util.ValidationUtil;
+import com.photobooking.util.FileHandler;
+import java.util.ArrayList;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Servlet implementation for user registration
@@ -18,6 +25,17 @@ import com.photobooking.util.ValidationUtil;
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(RegisterServlet.class.getName());
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        // Initialize data directory and files
+        FileHandler.createDirectory("data");
+        FileHandler.ensureFileExists("users.txt");
+        FileHandler.ensureFileExists("photographers.txt");
+        FileHandler.ensureFileExists("services.txt");
+    }
 
     /**
      * Handles GET requests - display registration page
@@ -137,8 +155,54 @@ public class RegisterServlet extends HttpServlet {
             boolean registrationSuccess = userManager.addUser(newUser);
 
             if (registrationSuccess) {
+                // If user is a photographer, create basic photographer profile
+                if (userType == User.UserType.PHOTOGRAPHER) {
+                    try {
+                        // Ensure photographers.txt file exists
+                        FileHandler.ensureFileExists("photographers.txt");
+
+                        PhotographerManager photographerManager = new PhotographerManager();
+
+                        // Create a simple photographer profile with default values
+                        Photographer photographer = new Photographer();
+                        photographer.setUserId(newUser.getUserId());
+                        photographer.setBusinessName(fullName + "'s Photography");
+                        photographer.setBiography("Professional photographer offering various photography services.");
+                        photographer.setSpecialties(new ArrayList<>());
+                        photographer.getSpecialties().add("General");
+                        photographer.setLocation("Not specified");
+                        photographer.setBasePrice(100.0); // Default base price
+                        photographer.setEmail(email);
+
+                        // Save the photographer profile
+                        boolean photographerProfileCreated = photographerManager.addPhotographer(photographer);
+
+                        if (photographerProfileCreated) {
+                            // Log the creation of photographer profile
+                            LOGGER.info("Photographer profile created for user: " + username);
+
+                            // Create default services for the photographer
+                            try {
+                                // Ensure services.txt file exists
+                                FileHandler.ensureFileExists("services.txt");
+
+                                PhotographerServiceManager serviceManager = new PhotographerServiceManager();
+                                serviceManager.createDefaultServices(photographer.getPhotographerId());
+                                LOGGER.info("Default services created for photographer: " + username);
+                            } catch (Exception e) {
+                                LOGGER.log(Level.WARNING, "Error creating default services: " + e.getMessage(), e);
+                            }
+                        } else {
+                            // Log the failure
+                            LOGGER.log(Level.WARNING, "Failed to create photographer profile for user: " + username);
+                        }
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Error during photographer profile creation: " + e.getMessage(), e);
+                    }
+                }
+
                 // Log successful registration
-                System.out.println("User registered successfully: " + username + " (" + userType + ")");
+                LOGGER.info("User registered successfully: " + username + " (" + userType + ")");
 
                 // Create session and add success message
                 HttpSession session = request.getSession(true);
@@ -153,8 +217,7 @@ public class RegisterServlet extends HttpServlet {
             }
         } catch (Exception e) {
             // Log any unexpected errors
-            System.err.println("Error during user registration:");
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error during user registration: " + e.getMessage(), e);
 
             request.setAttribute("errorMessage", "An unexpected error occurred: " + e.getMessage());
             request.getRequestDispatcher("/user/register.jsp").forward(request, response);
