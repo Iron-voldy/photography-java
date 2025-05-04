@@ -46,7 +46,8 @@ public class PhotographerRegistrationServlet extends HttpServlet {
 
         if (existingPhotographer != null) {
             // Already registered, redirect to dashboard
-            response.sendRedirect(request.getContextPath() + "/photographer/dashboard.jsp");
+            session.setAttribute("infoMessage", "You are already registered as a photographer");
+            response.sendRedirect(request.getContextPath() + "/photographer/dashboard");
             return;
         }
 
@@ -76,7 +77,8 @@ public class PhotographerRegistrationServlet extends HttpServlet {
 
         if (existingPhotographer != null) {
             // Already registered, redirect to dashboard
-            response.sendRedirect(request.getContextPath() + "/photographer/dashboard.jsp");
+            session.setAttribute("infoMessage", "You are already registered as a photographer");
+            response.sendRedirect(request.getContextPath() + "/photographer/dashboard");
             return;
         }
 
@@ -172,6 +174,6 @@ public class PhotographerRegistrationServlet extends HttpServlet {
 
         // Set success message and redirect to dashboard
         session.setAttribute("successMessage", "Photographer profile created successfully!");
-        response.sendRedirect(request.getContextPath() + "/photographer/dashboard.jsp");
+        response.sendRedirect(request.getContextPath() + "/photographer/dashboard");
     }
 }

@@ -89,8 +89,9 @@ public class FileHandler {
 
             // Check if file exists
             if (!file.exists()) {
-                LOGGER.warning("File does not exist: " + filePath);
-                return lines;
+                // Create the file if it doesn't exist
+                ensureFileExists(filePath);
+                return lines; // Return empty list for newly created file
             }
 
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -117,7 +118,7 @@ public class FileHandler {
 
             // Check if file exists
             if (!file.exists()) {
-                LOGGER.warning("File does not exist: " + filePath);
+                ensureFileExists(filePath);
                 return "";
             }
 

@@ -11,7 +11,10 @@ import javax.servlet.http.HttpSession;
 
 import com.photobooking.model.booking.Booking;
 import com.photobooking.model.booking.BookingManager;
+import com.photobooking.model.user.User;
 import com.photobooking.util.ValidationUtil;
+import com.photobooking.model.photographer.PhotographerManager;
+import com.photobooking.model.photographer.Photographer;
 
 @WebServlet("/booking/create")
 public class BookingCreateServlet extends HttpServlet {
@@ -22,10 +25,12 @@ public class BookingCreateServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
 
         // Check if user is logged in
-        if (session == null || session.getAttribute("userId") == null) {
+        if (session == null || session.getAttribute("user") == null) {
             response.sendRedirect(request.getContextPath() + "/user/login.jsp");
             return;
         }
+
+        User currentUser = (User) session.getAttribute("user");
 
         try {
             // Get form parameters
@@ -48,12 +53,22 @@ public class BookingCreateServlet extends HttpServlet {
                 return;
             }
 
+            // Check if photographer exists
+            PhotographerManager photographerManager = new PhotographerManager();
+            Photographer photographer = photographerManager.getPhotographerByUserId(photographerId);
+
+            if (photographer == null) {
+                session.setAttribute("errorMessage", "Selected photographer not found");
+                response.sendRedirect(request.getContextPath() + "/booking/booking_form.jsp");
+                return;
+            }
+
             // Parse date and time
             LocalDateTime eventDateTime = LocalDateTime.parse(eventDateStr + "T" + eventTimeStr);
 
             // Create booking
             Booking booking = new Booking();
-            booking.setClientId((String) session.getAttribute("userId"));
+            booking.setClientId(currentUser.getUserId());
             booking.setPhotographerId(photographerId);
             booking.setServiceId(serviceId);
             booking.setEventDateTime(eventDateTime);
@@ -68,7 +83,7 @@ public class BookingCreateServlet extends HttpServlet {
             BookingManager bookingManager = new BookingManager();
             if (bookingManager.createBooking(booking)) {
                 session.setAttribute("successMessage", "Booking created successfully!");
-                response.sendRedirect(request.getContextPath() + "/booking/booking_details.jsp?id=" + booking.getBookingId());
+                response.sendRedirect(request.getContextPath() + "/booking/booking_details?id=" + booking.getBookingId());
             } else {
                 session.setAttribute("errorMessage", "Failed to create booking");
                 response.sendRedirect(request.getContextPath() + "/booking/booking_form.jsp");
