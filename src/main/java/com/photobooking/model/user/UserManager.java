@@ -16,7 +16,6 @@ public class UserManager {
     private static final String USER_FILE_NAME = "users.txt";
     private List<User> users;
     private ServletContext servletContext;
-    private String dataFilePath;
 
     // Constructors
     public UserManager() {
@@ -26,46 +25,22 @@ public class UserManager {
     public UserManager(ServletContext servletContext) {
         this.servletContext = servletContext;
         this.users = new ArrayList<>();
-        initializeFilePath();
-        loadUsers();
-    }
 
-    // Initialize file path for storing users
-    private void initializeFilePath() {
+        // If servletContext is provided, make sure FileHandler is initialized with it
         if (servletContext != null) {
-            // Use WEB-INF/data within the application context
-            String webInfDataPath = "/WEB-INF/data";
-            dataFilePath = servletContext.getRealPath(webInfDataPath) + File.separator + USER_FILE_NAME;
-
-            // Ensure directory exists
-            File dataDir = new File(servletContext.getRealPath(webInfDataPath));
-            if (!dataDir.exists()) {
-                boolean created = dataDir.mkdirs();
-                System.out.println("Created WEB-INF/data directory: " + dataDir.getAbsolutePath() + " - Success: " + created);
-            }
-        } else {
-            // Fallback to simple data directory if not in web context
-            String dataPath = "data";
-            dataFilePath = dataPath + File.separator + USER_FILE_NAME;
-
-            // Ensure directory exists
-            File dataDir = new File(dataPath);
-            if (!dataDir.exists()) {
-                boolean created = dataDir.mkdirs();
-                System.out.println("Created fallback data directory: " + dataPath + " - Success: " + created);
-            }
+            FileHandler.setServletContext(servletContext);
         }
 
-        System.out.println("UserManager: Using data file path: " + dataFilePath);
+        loadUsers();
     }
 
     // Load users from file
     private void loadUsers() {
         // Ensure file exists
-        FileHandler.ensureFileExists(dataFilePath);
+        FileHandler.ensureFileExists(USER_FILE_NAME);
 
         // Read lines from file
-        List<String> lines = FileHandler.readLines(dataFilePath);
+        List<String> lines = FileHandler.readLines(USER_FILE_NAME);
 
         for (String line : lines) {
             if (line.trim().isEmpty()) continue;
@@ -82,11 +57,11 @@ public class UserManager {
     // Save users to file
     private boolean saveUsers() {
         // Delete existing file content
-        FileHandler.deleteFile(dataFilePath);
+        FileHandler.deleteFile(USER_FILE_NAME);
 
         // Write each user to file
         for (User user : users) {
-            FileHandler.appendLine(dataFilePath, user.toFileString());
+            FileHandler.appendLine(USER_FILE_NAME, user.toFileString());
         }
 
         return true;
@@ -200,19 +175,18 @@ public class UserManager {
 
     // Get users by type
     public List<User> getUsersByType(User.UserType userType) {
-        List<User> filteredUsers = new ArrayList<>();
-        for (User user : users) {
-            if (user.getUserType() == userType) {
-                filteredUsers.add(user);
-            }
-        }
-        return filteredUsers;
+        return users.stream()
+                .filter(user -> user.getUserType() == userType)
+                .collect(Collectors.toList());
     }
 
     // Set ServletContext (can be used to update the context after initialization)
     public void setServletContext(ServletContext servletContext) {
         this.servletContext = servletContext;
-        initializeFilePath();
+
+        // Update FileHandler with the new ServletContext
+        FileHandler.setServletContext(servletContext);
+
         // Reload users with the new file path
         users.clear();
         loadUsers();

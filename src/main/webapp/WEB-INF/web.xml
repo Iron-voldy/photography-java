@@ -6,6 +6,10 @@
          version="4.0">
   <display-name>Event Photography System</display-name>
 
+  <listener>
+    <listener-class>com.photobooking.util.ApplicationContextListener</listener-class>
+  </listener>
+
   <!-- Welcome Files -->
   <welcome-file-list>
     <welcome-file>index.jsp</welcome-file>
@@ -21,4 +25,5 @@
   <session-config>
     <session-timeout>30</session-timeout>
   </session-config>
+
 </web-app>

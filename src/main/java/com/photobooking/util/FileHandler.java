@@ -6,6 +6,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import javax.servlet.ServletContext;
 
 /**
  * Comprehensive File Handling Utility for the Event Photography System
@@ -13,8 +14,9 @@ import java.util.logging.Level;
  */
 public class FileHandler {
     private static final Logger LOGGER = Logger.getLogger(FileHandler.class.getName());
-    private static final String DATA_DIRECTORY = "src/main/webapp/WEB-INF/data";
+    private static String DATA_DIRECTORY = "WEB-INF/data";
     private static boolean initialized = false;
+    private static ServletContext servletContext = null;
 
     // Prevent instantiation
     private FileHandler() {
@@ -22,27 +24,93 @@ public class FileHandler {
     }
 
     /**
+     * Set the ServletContext for proper file path resolution
+     * @param context the ServletContext
+     */
+    public static void setServletContext(ServletContext context) {
+        servletContext = context;
+        initialize();
+    }
+
+    /**
      * Initialize and ensure data directory exists
      */
-    private static synchronized void initialize() {
+    public static synchronized void initialize() {
         if (initialized) {
             return;
         }
 
-        File directory = new File(DATA_DIRECTORY);
-        if (!directory.exists()) {
-            boolean created = directory.mkdirs();
-            if (created) {
-                LOGGER.info("Created data directory: " + directory.getAbsolutePath());
+        try {
+            // If running in a web context and servletContext is available
+            if (servletContext != null) {
+                // Get the real path to the data directory
+                String realPath = servletContext.getRealPath("/" + DATA_DIRECTORY);
+
+                if (realPath != null) {
+                    DATA_DIRECTORY = realPath;
+                    File directory = new File(DATA_DIRECTORY);
+
+                    if (!directory.exists()) {
+                        boolean created = directory.mkdirs();
+                        if (created) {
+                            LOGGER.info("Created data directory: " + directory.getAbsolutePath());
+                        } else {
+                            LOGGER.warning("Failed to create data directory: " + directory.getAbsolutePath());
+                        }
+                    } else {
+                        LOGGER.info("Using existing data directory: " + directory.getAbsolutePath());
+                    }
+                } else {
+                    // Fallback for development environment
+                    String userDir = System.getProperty("user.dir");
+                    DATA_DIRECTORY = userDir + File.separator + "src" + File.separator + "main" +
+                            File.separator + "webapp" + File.separator + "WEB-INF" +
+                            File.separator + "data";
+
+                    File directory = new File(DATA_DIRECTORY);
+                    if (!directory.exists()) {
+                        boolean created = directory.mkdirs();
+                        if (created) {
+                            LOGGER.info("Created fallback data directory: " + directory.getAbsolutePath());
+                        } else {
+                            LOGGER.warning("Failed to create fallback data directory: " + directory.getAbsolutePath());
+                        }
+                    }
+                    LOGGER.info("Using fallback data directory: " + directory.getAbsolutePath());
+                }
             } else {
-                LOGGER.warning("Failed to create data directory: " + directory.getAbsolutePath());
+                // When running outside a web context (e.g. unit tests)
+                String userDir = System.getProperty("user.dir");
+                DATA_DIRECTORY = userDir + File.separator + "src" + File.separator + "main" +
+                        File.separator + "webapp" + File.separator + "WEB-INF" +
+                        File.separator + "data";
+
+                File directory = new File(DATA_DIRECTORY);
+                if (!directory.exists()) {
+                    boolean created = directory.mkdirs();
+                    if (created) {
+                        LOGGER.info("Created standalone data directory: " + directory.getAbsolutePath());
+                    } else {
+                        LOGGER.warning("Failed to create standalone data directory: " + directory.getAbsolutePath());
+                    }
+                }
+                LOGGER.info("Using standalone data directory: " + directory.getAbsolutePath());
             }
-        } else {
-            LOGGER.info("Using existing data directory: " + directory.getAbsolutePath());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error initializing data directory", e);
+            // Create a fallback directory in the current working directory
+            String userDir = System.getProperty("user.dir");
+            DATA_DIRECTORY = userDir + File.separator + "data";
+
+            File directory = new File(DATA_DIRECTORY);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+            LOGGER.info("Using emergency fallback data directory: " + directory.getAbsolutePath());
         }
 
         initialized = true;
-        LOGGER.info("FileHandler initialized with data directory: " + directory.getAbsolutePath());
+        LOGGER.info("FileHandler initialized with data directory: " + DATA_DIRECTORY);
     }
 
     /**
@@ -55,7 +123,9 @@ public class FileHandler {
 
         // Determine the full path
         String fullPath;
-        if (directoryPath.equals(DATA_DIRECTORY) || directoryPath.contains(DATA_DIRECTORY)) {
+        File dataDir = new File(DATA_DIRECTORY);
+
+        if (directoryPath.startsWith(dataDir.getAbsolutePath()) || new File(directoryPath).isAbsolute()) {
             fullPath = directoryPath;
         } else {
             fullPath = DATA_DIRECTORY + File.separator + directoryPath;
@@ -313,8 +383,13 @@ public class FileHandler {
      * @return Full path including data directory if needed
      */
     private static String getFullPath(String filePath) {
-        // If it's already absolute or contains the data directory path, return as is
-        if (new File(filePath).isAbsolute() || filePath.contains(DATA_DIRECTORY)) {
+        // If it's already absolute, return as is
+        if (new File(filePath).isAbsolute()) {
+            return filePath;
+        }
+
+        // If it already contains the data directory path, return as is
+        if (filePath.startsWith(DATA_DIRECTORY)) {
             return filePath;
         }
 
