@@ -3,13 +3,17 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <%@ page import="com.photobooking.model.photographer.Photographer" %>
+<%@ page import="com.photobooking.model.photographer.PhotographerManager" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 <%@ page import="com.photobooking.util.ValidationUtil" %>
 
-<!-- Add this at the beginning to access Java objects properly -->
-<c:set var="photographers" value="${photographers}" />
-<c:set var="specialties" value="${specialties}" />
-
+<%
+    // Add direct access to photographers for debugging
+    PhotographerManager debugManager = new PhotographerManager(application);
+    List<Photographer> debugPhotographers = debugManager.getAllPhotographers();
+    pageContext.setAttribute("debugPhotographers", debugPhotographers);
+%>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -143,6 +147,16 @@
             color: #4361ee;
             margin-bottom: 20px;
         }
+
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -160,6 +174,19 @@
     <div class="container">
         <!-- Include Messages -->
         <jsp:include page="/includes/messages.jsp" />
+
+        <!-- Debug Information (remove in production) -->
+        <div class="debug-info">
+            <h5>Debug Information</h5>
+            <p><strong>Request Attribute Photographers:</strong> Count = ${fn:length(photographers)}</p>
+            <p><strong>Direct Database Access:</strong> Count = ${fn:length(debugPhotographers)}</p>
+            <p><strong>Debug photographers:</strong>
+                <c:forEach var="dp" items="${debugPhotographers}">
+                    <br>${dp.photographerId}: ${dp.businessName} (${dp.userId})
+                </c:forEach>
+            </p>
+            <p><strong>Other attributes:</strong> currentPage=${currentPage}, totalPages=${totalPages}, ${debugInfo}</p>
+        </div>
 
         <!-- Filter Section -->
         <div class="filter-section">
@@ -239,6 +266,75 @@
                                         <img src="${pageContext.request.contextPath}/assets/images/default-photographer.jpg" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
                                     </c:otherwise>
                                 </c:choose>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">${photographer.businessName}</h5>
+                                        <c:choose>
+                                            <c:when test="${photographer.verified}">
+                                                <span class="badge bg-success">Verified</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="badge bg-warning text-dark">New</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </div>
+                                    <p class="location-badge">
+                                        <i class="bi bi-geo-alt me-1"></i>${photographer.location}
+                                    </p>
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="rating-stars me-2">
+                                            <c:forEach begin="1" end="5" varStatus="star">
+                                                <c:choose>
+                                                    <c:when test="${star.index <= photographer.rating}">
+                                                        <i class="bi bi-star-fill"></i>
+                                                    </c:when>
+                                                    <c:when test="${star.index > photographer.rating && star.index < photographer.rating + 1}">
+                                                        <i class="bi bi-star-half"></i>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <i class="bi bi-star"></i>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </c:forEach>
+                                        </div>
+                                        <span>${photographer.rating} (${photographer.reviewCount} reviews)</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <c:forEach var="specialty" items="${photographer.specialties}">
+                                            <span class="badge badge-specialty">${specialty}</span>
+                                        </c:forEach>
+                                    </div>
+                                    <p class="card-text text-muted small mb-3">
+                                        <c:choose>
+                                            <c:when test="${fn:length(photographer.biography) > 100}">
+                                                ${fn:substring(photographer.biography, 0, 100)}...
+                                            </c:when>
+                                            <c:otherwise>
+                                                ${photographer.biography}
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-primary">From $${photographer.basePrice}/hr</span>
+                                        <a href="${pageContext.request.contextPath}/photographer/profile?id=${photographer.photographerId}"
+                                           class="btn btn-outline-primary">View Profile</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </c:forEach>
+                </c:when>
+                <c:when test="${not empty debugPhotographers}">
+                    <div class="col-12 mb-4">
+                        <div class="alert alert-warning">
+                            <h4>Found photographers in database but not in request!</h4>
+                            <p>Showing photographers directly from database as a fallback.</p>
+                        </div>
+                    </div>
+                    <c:forEach var="photographer" items="${debugPhotographers}">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card photographer-card">
+                                <img src="${pageContext.request.contextPath}/assets/images/default-photographer.jpg" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">${photographer.businessName}</h5>
