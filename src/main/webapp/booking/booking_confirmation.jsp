@@ -8,9 +8,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking Confirmation - SnapEvent</title>
 
-    <!-- Favicon -->
-    <link rel="icon" href="${pageContext.request.contextPath}/assets/images/favicon.ico" type="image/x-icon">
-
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -19,23 +16,59 @@
 
     <!-- Custom CSS -->
     <style>
-        body {
-            background-color: #f4f6f9;
+        .confirmation-header {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            padding: 50px 0;
+            margin-bottom: 30px;
+            border-radius: 0 0 10px 10px;
+            text-align: center;
         }
+
         .confirmation-card {
-            max-width: 600px;
-            margin: 50px auto;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
         }
+
         .confirmation-icon {
-            font-size: 5rem;
-            color: #28a745;
+            font-size: 60px;
+            color: #4361ee;
+            margin-bottom: 20px;
         }
+
         .booking-details {
             background-color: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-row {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #6c757d;
+        }
+
+        .success-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #4361ee;
+            color: white;
+            padding: 10px 20px;
+            transform: rotate(45deg) translate(20px, -15px);
+            transform-origin: top right;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
     </style>
 </head>
@@ -43,48 +76,143 @@
     <!-- Include Header -->
     <jsp:include page="/includes/header.jsp" />
 
-    <div class="container">
-        <div class="card confirmation-card">
-            <div class="card-body text-center">
-                <i class="bi bi-check-circle confirmation-icon mb-4"></i>
-                <h2 class="card-title mb-4">Booking Confirmed!</h2>
+    <!-- Confirmation Header -->
+    <div class="confirmation-header">
+        <div class="container">
+            <h1 class="display-4">Booking Confirmed!</h1>
+            <p class="lead">Your photography session has been successfully booked</p>
+        </div>
+    </div>
 
-                <div class="booking-details mb-4">
-                    <c:choose>
-                        <c:when test="${not empty booking}">
-                            <h4 class="mb-3">${booking.eventType} Photography</h4>
-                            <div class="row">
-                                <div class="col-md-6 mb-2">
-                                    <strong>Date:</strong>
-                                    <fmt:parseDate value="${booking.eventDateTime}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedDate" />
-                                    <fmt:formatDate value="${parsedDate}" pattern="MMMM dd, yyyy 'at' h:mm a" />
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <strong>Location:</strong> ${booking.eventLocation}
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <strong>Photographer:</strong> ${photographer.fullName}
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <strong>Total Cost:</strong> $${booking.totalPrice}
-                                </div>
+    <div class="container">
+        <!-- Include Messages -->
+        <jsp:include page="/includes/messages.jsp" />
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="confirmation-card text-center">
+                    <div class="success-badge">CONFIRMED</div>
+                    <div class="confirmation-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <h2 class="mb-4">Thank You for Your Booking!</h2>
+                    <p class="mb-4">Your booking has been confirmed and the photographer has been notified. You'll receive an email confirmation shortly with all the details.</p>
+
+                    <div class="booking-details text-start">
+                        <h4 class="mb-4">Booking Details</h4>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Booking ID:</div>
+                            <div class="col-md-8">${booking.bookingId}</div>
+                        </div>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Photographer:</div>
+                            <div class="col-md-8">${photographer.businessName}</div>
+                        </div>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Service Package:</div>
+                            <div class="col-md-8">${service.name}</div>
+                        </div>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Event Date:</div>
+                            <div class="col-md-8">
+                                <fmt:parseDate value="${booking.eventDateTime}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedDate" />
+                                <fmt:formatDate value="${parsedDate}" pattern="MMMM d, yyyy" />
                             </div>
-                        </c:when>
-                        <c:otherwise>
-                            <p class="text-muted">Booking details not available</p>
-                        </c:otherwise>
-                    </c:choose>
+                        </div>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Time:</div>
+                            <div class="col-md-8">
+                                <fmt:parseDate value="${booking.eventDateTime}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedTime" />
+                                <fmt:formatDate value="${parsedTime}" pattern="h:mm a" />
+                            </div>
+                        </div>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Location:</div>
+                            <div class="col-md-8">${booking.eventLocation}</div>
+                        </div>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Event Type:</div>
+                            <div class="col-md-8">${booking.eventType}</div>
+                        </div>
+
+                        <div class="row detail-row">
+                            <div class="col-md-4 detail-label">Total Price:</div>
+                            <div class="col-md-8">$${booking.totalPrice}</div>
+                        </div>
+                    </div>
+
+                    <p class="mb-4">If you need to make any changes or have questions about your booking, please contact the photographer directly or visit your bookings page.</p>
+
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-center mt-5">
+                        <a href="${pageContext.request.contextPath}/booking/list" class="btn btn-primary btn-lg">
+                            <i class="bi bi-list me-2"></i>View All Bookings
+                        </a>
+                        <a href="${pageContext.request.contextPath}/user/dashboard.jsp" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+                        </a>
+                    </div>
                 </div>
 
-                <div class="d-flex justify-content-center gap-3">
-                    <a href="${pageContext.request.contextPath}/booking/details?id=${booking.bookingId}"
-                       class="btn btn-primary">
-                        View Booking Details
-                    </a>
-                    <a href="${pageContext.request.contextPath}/user/dashboard.jsp"
-                       class="btn btn-outline-secondary">
-                        Go to Dashboard
-                    </a>
+                <!-- What's Next Card -->
+                <div class="confirmation-card">
+                    <h3 class="mb-4">What's Next?</h3>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-3 text-primary">
+                                    <i class="bi bi-envelope-check fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5>Check Your Email</h5>
+                                    <p>You'll receive a detailed confirmation email with all the information about your booking.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-3 text-primary">
+                                    <i class="bi bi-chat-dots fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5>Photographer Contact</h5>
+                                    <p>The photographer may reach out to discuss specific details about your session.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-3 text-primary">
+                                    <i class="bi bi-calendar-check fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5>Prepare for Your Session</h5>
+                                    <p>Plan outfits, locations, and any specific shots you'd like to capture during your session.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-3 text-primary">
+                                    <i class="bi bi-clock-history fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5>Day of Your Event</h5>
+                                    <p>The photographer will arrive at the scheduled time and location ready to capture your special moments.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -93,38 +221,7 @@
     <!-- Include Footer -->
     <jsp:include page="/includes/footer.jsp" />
 
-    <!-- Bootstrap Bundle with Popper -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Email Confirmation Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Optional: Send email confirmation via AJAX
-            function sendEmailConfirmation() {
-                fetch('${pageContext.request.contextPath}/booking/send-confirmation', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        bookingId: '${booking.bookingId}',
-                        email: '${sessionScope.user.email}'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        console.log('Confirmation email sent');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error sending confirmation:', error);
-                });
-            }
-
-            // Uncomment to enable email confirmation
-            // sendEmailConfirmation();
-        });
-    </script>
 </body>
 </html>
