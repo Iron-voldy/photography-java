@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import javax.servlet.ServletContext;
 
 /**
  * Manages service packages offered by photographers
@@ -14,11 +15,27 @@ public class PhotographerServiceManager {
     private static final Logger LOGGER = Logger.getLogger(PhotographerServiceManager.class.getName());
     private static final String SERVICE_FILE = "services.txt";
     private List<PhotographerService> services;
+    private ServletContext servletContext;
 
     /**
      * Constructor initializes the manager and loads services
      */
     public PhotographerServiceManager() {
+        this(null);
+    }
+
+    /**
+     * Constructor with ServletContext
+     * @param servletContext the servlet context
+     */
+    public PhotographerServiceManager(ServletContext servletContext) {
+        this.servletContext = servletContext;
+
+        // If servletContext is provided, make sure FileHandler is initialized with it
+        if (servletContext != null) {
+            FileHandler.setServletContext(servletContext);
+        }
+
         this.services = loadServices();
     }
 
@@ -26,7 +43,7 @@ public class PhotographerServiceManager {
      * Load services from file
      * @return List of services
      */
-    private List<PhotographerService> loadServices() {
+    public List<PhotographerService> loadServices() {
         // Ensure file exists before loading
         FileHandler.ensureFileExists(SERVICE_FILE);
 
@@ -289,5 +306,20 @@ public class PhotographerServiceManager {
 
         LOGGER.info("Successfully created default services for photographer ID: " + photographerId);
         return true;
+    }
+
+    /**
+     * Set ServletContext (can be used to update the context after initialization)
+     * @param servletContext the servlet context
+     */
+    public void setServletContext(ServletContext servletContext) {
+        this.servletContext = servletContext;
+
+        // Update FileHandler with the new ServletContext
+        FileHandler.setServletContext(servletContext);
+
+        // Reload services with the new file path
+        services.clear();
+        services = loadServices();
     }
 }

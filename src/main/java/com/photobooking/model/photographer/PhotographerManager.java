@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import javax.servlet.ServletContext;
 
 /**
  * Manages photographer-related operations for the Event Photography System
@@ -15,11 +16,27 @@ public class PhotographerManager {
     private static final Logger LOGGER = Logger.getLogger(PhotographerManager.class.getName());
     private static final String PHOTOGRAPHER_FILE = "photographers.txt";
     private List<Photographer> photographers;
+    private ServletContext servletContext;
 
     /**
      * Constructor initializes the manager and loads photographers
      */
     public PhotographerManager() {
+        this(null);
+    }
+
+    /**
+     * Constructor with ServletContext
+     * @param servletContext the servlet context
+     */
+    public PhotographerManager(ServletContext servletContext) {
+        this.servletContext = servletContext;
+
+        // If servletContext is provided, make sure FileHandler is initialized with it
+        if (servletContext != null) {
+            FileHandler.setServletContext(servletContext);
+        }
+
         this.photographers = loadPhotographers();
     }
 
@@ -393,5 +410,20 @@ public class PhotographerManager {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Set ServletContext (can be used to update the context after initialization)
+     * @param servletContext the servlet context
+     */
+    public void setServletContext(ServletContext servletContext) {
+        this.servletContext = servletContext;
+
+        // Update FileHandler with the new ServletContext
+        FileHandler.setServletContext(servletContext);
+
+        // Reload photographers with the new file path
+        photographers.clear();
+        photographers = loadPhotographers();
     }
 }

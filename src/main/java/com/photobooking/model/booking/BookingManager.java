@@ -5,15 +5,31 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+import javax.servlet.ServletContext;
 
 /**
  * Manages all booking-related operations for the Event Photography System
  */
 public class BookingManager {
+    private static final Logger LOGGER = Logger.getLogger(BookingManager.class.getName());
     private static final String BOOKING_FILE = "bookings.txt";
     private List<Booking> bookings;
+    private ServletContext servletContext;
 
     public BookingManager() {
+        this(null);
+    }
+
+    public BookingManager(ServletContext servletContext) {
+        this.servletContext = servletContext;
+
+        // If servletContext is provided, make sure FileHandler is initialized with it
+        if (servletContext != null) {
+            FileHandler.setServletContext(servletContext);
+        }
+
         this.bookings = loadBookings();
     }
 
@@ -22,6 +38,9 @@ public class BookingManager {
      * @return List of bookings
      */
     private List<Booking> loadBookings() {
+        // Ensure file exists before loading
+        FileHandler.ensureFileExists(BOOKING_FILE);
+
         List<String> lines = FileHandler.readLines(BOOKING_FILE);
         List<Booking> loadedBookings = new ArrayList<>();
 
@@ -34,6 +53,7 @@ public class BookingManager {
             }
         }
 
+        LOGGER.info("Loaded " + loadedBookings.size() + " bookings from file");
         return loadedBookings;
     }
 
@@ -43,16 +63,38 @@ public class BookingManager {
      */
     private boolean saveBookings() {
         try {
+            // Create a backup first
+            if (FileHandler.fileExists(BOOKING_FILE)) {
+                FileHandler.copyFile(BOOKING_FILE, BOOKING_FILE + ".bak");
+            }
+
             // Delete existing file content
             FileHandler.deleteFile(BOOKING_FILE);
 
-            // Write each booking to file
+            // Ensure file exists
+            FileHandler.ensureFileExists(BOOKING_FILE);
+
+            // Write all bookings at once for better performance
+            StringBuilder contentToWrite = new StringBuilder();
             for (Booking booking : bookings) {
-                FileHandler.appendLine(BOOKING_FILE, booking.toFileString());
+                contentToWrite.append(booking.toFileString()).append(System.lineSeparator());
             }
-            return true;
+
+            boolean result = FileHandler.writeToFile(BOOKING_FILE, contentToWrite.toString(), false);
+
+            if (result) {
+                LOGGER.info("Successfully saved " + bookings.size() + " bookings");
+            } else {
+                LOGGER.warning("Failed to save bookings");
+                // Restore from backup
+                if (FileHandler.fileExists(BOOKING_FILE + ".bak")) {
+                    FileHandler.copyFile(BOOKING_FILE + ".bak", BOOKING_FILE);
+                }
+            }
+
+            return result;
         } catch (Exception e) {
-            System.err.println("Error saving bookings: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error saving bookings: " + e.getMessage(), e);
             return false;
         }
     }
@@ -308,5 +350,20 @@ public class BookingManager {
                 .filter(b -> b.getEventDateTime().isBefore(now))
                 .sorted((b1, b2) -> b2.getEventDateTime().compareTo(b1.getEventDateTime())) // Newest first
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Set ServletContext (can be used to update the context after initialization)
+     * @param servletContext the servlet context
+     */
+    public void setServletContext(ServletContext servletContext) {
+        this.servletContext = servletContext;
+
+        // Update FileHandler with the new ServletContext
+        FileHandler.setServletContext(servletContext);
+
+        // Reload bookings with the new file path
+        bookings.clear();
+        bookings = loadBookings();
     }
 }

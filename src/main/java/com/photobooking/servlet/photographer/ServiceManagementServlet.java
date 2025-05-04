@@ -31,6 +31,7 @@ public class ServiceManagementServlet extends HttpServlet {
     public void init() throws ServletException {
         super.init();
         // Initialize necessary data directories and files
+        FileHandler.setServletContext(getServletContext());
         FileHandler.createDirectory("data");
         FileHandler.ensureFileExists("photographers.txt");
         FileHandler.ensureFileExists("services.txt");
@@ -54,20 +55,24 @@ public class ServiceManagementServlet extends HttpServlet {
             return;
         }
 
-        // Get photographer ID from session
+        // Debug logging
+        LOGGER.info("ServiceManagementServlet doGet - UserId: " + currentUser.getUserId());
+
+        // Get photographer ID from session or from database
         String photographerId = (String) session.getAttribute("photographerId");
+        LOGGER.info("ServiceManagementServlet doGet - Session photographerId: " + photographerId);
 
         // If photographerId is not in session, try to get it from the database
         if (photographerId == null) {
             try {
-                PhotographerManager photographerManager = new PhotographerManager();
+                PhotographerManager photographerManager = new PhotographerManager(getServletContext());
                 Photographer photographer = photographerManager.getPhotographerByUserId(currentUser.getUserId());
 
                 if (photographer != null) {
                     // Set photographerId in session for future use
                     photographerId = photographer.getPhotographerId();
                     session.setAttribute("photographerId", photographerId);
-                    LOGGER.info("Retrieved photographer ID for user: " + currentUser.getUsername());
+                    LOGGER.info("Retrieved photographer ID for user: " + currentUser.getUsername() + ", ID: " + photographerId);
                 } else {
                     // Create a new photographer profile if one doesn't exist
                     photographer = new Photographer();
@@ -86,11 +91,11 @@ public class ServiceManagementServlet extends HttpServlet {
                     if (profileCreated) {
                         photographerId = photographer.getPhotographerId();
                         session.setAttribute("photographerId", photographerId);
-                        LOGGER.info("Created missing photographer profile for user: " + currentUser.getUsername());
+                        LOGGER.info("Created missing photographer profile for user: " + currentUser.getUsername() + ", ID: " + photographerId);
 
                         // Create default services for the photographer
                         try {
-                            PhotographerServiceManager serviceManager = new PhotographerServiceManager();
+                            PhotographerServiceManager serviceManager = new PhotographerServiceManager(getServletContext());
                             serviceManager.createDefaultServices(photographerId);
                             LOGGER.info("Created default services for new photographer profile");
                         } catch (Exception e) {
@@ -110,13 +115,34 @@ public class ServiceManagementServlet extends HttpServlet {
             }
         }
 
+        // Double-check if we have a photographerId at this point
+        if (photographerId == null) {
+            LOGGER.severe("Failed to obtain photographerId after all attempts");
+            session.setAttribute("errorMessage", "System error: Could not determine photographer ID");
+            response.sendRedirect(request.getContextPath() + "/photographer/dashboard.jsp");
+            return;
+        }
+
         // Get photographer services
         try {
-            PhotographerServiceManager serviceManager = new PhotographerServiceManager();
+            PhotographerServiceManager serviceManager = new PhotographerServiceManager(getServletContext());
+
+            // Debug: Load all services first to see what's available
+            List<PhotographerService> allServices = serviceManager.loadServices();
+            LOGGER.info("Total services loaded: " + allServices.size());
+            for (PhotographerService service : allServices) {
+                LOGGER.info("Service: ID=" + service.getServiceId() + ", Name=" + service.getName() + ", PhotographerId=" + service.getPhotographerId());
+            }
+
+            // Now get services specific to this photographer
             List<PhotographerService> services = serviceManager.getServicesByPhotographer(photographerId);
+            LOGGER.info("Services found for photographerId " + photographerId + ": " + services.size());
 
             // Set attributes for JSP
             request.setAttribute("services", services);
+
+            // Add additional debug information for JSP
+            request.setAttribute("debugInfo", "PhotographerId: " + photographerId + ", Services found: " + services.size());
 
             request.getRequestDispatcher("/photographer/service_management.jsp").forward(request, response);
         } catch (Exception e) {
