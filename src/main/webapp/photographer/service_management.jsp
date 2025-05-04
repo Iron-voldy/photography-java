@@ -1,6 +1,54 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="com.photobooking.model.photographer.PhotographerServiceManager" %>
+<%@ page import="com.photobooking.model.photographer.PhotographerService" %>
+<%@ page import="com.photobooking.model.photographer.PhotographerManager" %>
+<%@ page import="com.photobooking.model.photographer.Photographer" %>
+<%@ page import="com.photobooking.model.user.User" %>
+<%@ page import="java.util.List" %>
+
+<%
+    // Get current user from session
+    User currentUser = (User) session.getAttribute("user");
+    if (currentUser == null) {
+        response.sendRedirect(request.getContextPath() + "/user/login.jsp");
+        return;
+    }
+
+    // Check if user is a photographer
+    if (currentUser.getUserType() != User.UserType.PHOTOGRAPHER) {
+        session.setAttribute("errorMessage", "Access denied. Only photographers can access this page.");
+        response.sendRedirect(request.getContextPath() + "/user/dashboard.jsp");
+        return;
+    }
+
+    // Get photographerId from session or from the database
+    String photographerId = (String) session.getAttribute("photographerId");
+    if (photographerId == null) {
+        // Try to get photographer ID from database
+        PhotographerManager photographerManager = new PhotographerManager();
+        Photographer photographer = photographerManager.getPhotographerByUserId(currentUser.getUserId());
+
+        if (photographer != null) {
+            photographerId = photographer.getPhotographerId();
+            session.setAttribute("photographerId", photographerId);
+        } else {
+            session.setAttribute("errorMessage", "Photographer profile not found. Please create one first.");
+            response.sendRedirect(request.getContextPath() + "/photographer/register.jsp");
+            return;
+        }
+    }
+
+    // Load services for this photographer
+    PhotographerServiceManager serviceManager = new PhotographerServiceManager();
+    List<PhotographerService> services = serviceManager.getServicesByPhotographer(photographerId);
+
+    // Set services as request attribute to access in JSP
+    request.setAttribute("services", services);
+    request.setAttribute("photographerId", photographerId);
+%>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -439,7 +487,7 @@ Print release"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="addServiceForm" class="btn btn-primary-custom">Add Package</button>
+                    <button type="submit" form="addServiceForm" class="btn btn-primary">Add Package</button>
                 </div>
             </div>
         </div>
@@ -461,7 +509,7 @@ Print release"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="editServiceForm" class="btn btn-primary-custom">Update Package</button>
+                    <button type="submit" form="editServiceForm" class="btn btn-primary">Update Package</button>
                 </div>
             </div>
         </div>
@@ -490,6 +538,9 @@ Print release"></textarea>
         </div>
     </div>
 
+    <!-- Include Footer -->
+    <jsp:include page="/includes/footer.jsp" />
+
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -504,9 +555,11 @@ Print release"></textarea>
                 price: ${service.price},
                 duration: ${service.durationHours},
                 photographers: ${service.photographersCount},
-                features: [<c:forEach var="feature" items="${service.features}" varStatus="status">
-                    '${feature}'<c:if test="${!status.last}">,</c:if>
-                </c:forEach>],
+                features: [
+                    <c:forEach var="feature" items="${service.features}" varStatus="status">
+                        '${feature}'<c:if test="${!status.last}">, </c:if>
+                    </c:forEach>
+                ],
                 deliverables: '${service.deliverables}',
                 active: ${service.active}
             };
@@ -517,60 +570,63 @@ Print release"></textarea>
             const form = document.getElementById('editServiceForm');
 
             // Clear previous form content
-            form.innerHTML = '<input type="hidden" name="packageId" id="editPackageId" value="' + serviceId + '">';
+            form.innerHTML = '<input type="hidden" name="packageId" value="' + serviceId + '">';
 
-            // Create form fields
-            form.innerHTML += `
-                <div class="row g-3">
-                    <div class="col-md-8">
-                        <label for="editPackageName" class="form-label">Package Name</label>
-                        <input type="text" class="form-control" id="editPackageName" name="packageName" value="${service.name}" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="editPackageCategory" class="form-label">Category</label>
-                        <select class="form-select" id="editPackageCategory" name="packageCategory" required>
-                            <option value="WEDDING" ${service.category == 'WEDDING' ? 'selected' : ''}>Wedding</option>
-                            <option value="PORTRAIT" ${service.category == 'PORTRAIT' ? 'selected' : ''}>Portrait</option>
-                            <option value="EVENT" ${service.category == 'EVENT' ? 'selected' : ''}>Event</option>
-                            <option value="CORPORATE" ${service.category == 'CORPORATE' ? 'selected' : ''}>Corporate</option>
-                            <option value="FAMILY" ${service.category == 'FAMILY' ? 'selected' : ''}>Family</option>
-                            <option value="PRODUCT" ${service.category == 'PRODUCT' ? 'selected' : ''}>Product</option>
-                            <option value="OTHER" ${service.category == 'OTHER' ? 'selected' : ''}>Other</option>
-                        </select>
-                    </div>
-                    <div class="col-md-12">
-                        <label for="editPackageDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="editPackageDescription" name="packageDescription" rows="3" required>${service.description}</textarea>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="editPackagePrice" class="form-label">Price ($)</label>
-                        <input type="number" class="form-control" id="editPackagePrice" name="packagePrice" step="0.01" min="0" value="${service.price}" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="editPackageDuration" class="form-label">Duration (hours)</label>
-                        <input type="number" class="form-control" id="editPackageDuration" name="packageDuration" min="1" value="${service.duration}" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="editPackagePhotographers" class="form-label">Number of Photographers</label>
-                        <input type="number" class="form-control" id="editPackagePhotographers" name="packagePhotographers" min="1" max="5" value="${service.photographers}" required>
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label">Package Features</label>
-                        <div class="form-text mb-2">Enter each feature on a new line</div>
-                        <textarea class="form-control" id="editPackageFeatures" name="packageFeatures" rows="5">${service.features.join('\\n')}</textarea>
-                    </div>
-                    <div class="col-md-12">
-                        <label for="editPackageDeliverables" class="form-label">Deliverables</label>
-                        <input type="text" class="form-control" id="editPackageDeliverables" name="packageDeliverables" value="${service.deliverables}">
-                    </div>
-                    <div class="col-md-12">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="editPackageActive" name="packageActive" ${service.active ? 'checked' : ''}>
-                            <label class="form-check-label" for="editPackageActive">Package Active</label>
-                        </div>
-                    </div>
-                </div>
-            `;
+            // Create form fields - using string concatenation instead of template literals
+            let featuresText = '';
+            if (service.features && service.features.length > 0) {
+                featuresText = service.features.join('\n');
+            }
+
+            form.innerHTML += '<div class="row g-3">' +
+                '<div class="col-md-8">' +
+                    '<label for="editPackageName" class="form-label">Package Name</label>' +
+                    '<input type="text" class="form-control" id="editPackageName" name="packageName" value="' + service.name + '" required>' +
+                '</div>' +
+                '<div class="col-md-4">' +
+                    '<label for="editPackageCategory" class="form-label">Category</label>' +
+                    '<select class="form-select" id="editPackageCategory" name="packageCategory" required>' +
+                        '<option value="WEDDING" ' + (service.category == 'WEDDING' ? 'selected' : '') + '>Wedding</option>' +
+                        '<option value="PORTRAIT" ' + (service.category == 'PORTRAIT' ? 'selected' : '') + '>Portrait</option>' +
+                        '<option value="EVENT" ' + (service.category == 'EVENT' ? 'selected' : '') + '>Event</option>' +
+                        '<option value="CORPORATE" ' + (service.category == 'CORPORATE' ? 'selected' : '') + '>Corporate</option>' +
+                        '<option value="FAMILY" ' + (service.category == 'FAMILY' ? 'selected' : '') + '>Family</option>' +
+                        '<option value="PRODUCT" ' + (service.category == 'PRODUCT' ? 'selected' : '') + '>Product</option>' +
+                        '<option value="OTHER" ' + (service.category == 'OTHER' ? 'selected' : '') + '>Other</option>' +
+                    '</select>' +
+                '</div>' +
+                '<div class="col-md-12">' +
+                    '<label for="editPackageDescription" class="form-label">Description</label>' +
+                    '<textarea class="form-control" id="editPackageDescription" name="packageDescription" rows="3" required>' + service.description + '</textarea>' +
+                '</div>' +
+                '<div class="col-md-4">' +
+                    '<label for="editPackagePrice" class="form-label">Price ($)</label>' +
+                    '<input type="number" class="form-control" id="editPackagePrice" name="packagePrice" step="0.01" min="0" value="' + service.price + '" required>' +
+                '</div>' +
+                '<div class="col-md-4">' +
+                    '<label for="editPackageDuration" class="form-label">Duration (hours)</label>' +
+                    '<input type="number" class="form-control" id="editPackageDuration" name="packageDuration" min="1" value="' + service.duration + '" required>' +
+                '</div>' +
+                '<div class="col-md-4">' +
+                    '<label for="editPackagePhotographers" class="form-label">Number of Photographers</label>' +
+                    '<input type="number" class="form-control" id="editPackagePhotographers" name="packagePhotographers" min="1" max="5" value="' + service.photographers + '" required>' +
+                '</div>' +
+                '<div class="col-md-12">' +
+                    '<label class="form-label">Package Features</label>' +
+                    '<div class="form-text mb-2">Enter each feature on a new line</div>' +
+                    '<textarea class="form-control" id="editPackageFeatures" name="packageFeatures" rows="5">' + featuresText + '</textarea>' +
+                '</div>' +
+                '<div class="col-md-12">' +
+                    '<label for="editPackageDeliverables" class="form-label">Deliverables</label>' +
+                    '<input type="text" class="form-control" id="editPackageDeliverables" name="packageDeliverables" value="' + service.deliverables + '">' +
+                '</div>' +
+                '<div class="col-md-12">' +
+                    '<div class="form-check form-switch">' +
+                        '<input class="form-check-input" type="checkbox" id="editPackageActive" name="packageActive" ' + (service.active ? 'checked' : '') + '>' +
+                        '<label class="form-check-label" for="editPackageActive">Package Active</label>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
         }
 
         function deleteService(serviceId) {
