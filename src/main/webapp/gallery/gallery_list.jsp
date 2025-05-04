@@ -1,7 +1,7 @@
-<%-- gallery_list.jsp --%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -215,7 +215,15 @@
                                     </p>
                                     <div class="d-flex justify-content-between align-items-center mt-3">
                                         <small class="text-muted">
-                                            <fmt:formatDate value="${gallery.createdDate}" pattern="MMM d, yyyy"/>
+                                            <c:choose>
+                                                <c:when test="${gallery.createdDate != null}">
+                                                    <% pageContext.setAttribute("dateFormat", java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy")); %>
+                                                    ${gallery.createdDate.format(dateFormat)}
+                                                </c:when>
+                                                <c:otherwise>
+                                                    Unknown date
+                                                </c:otherwise>
+                                            </c:choose>
                                         </small>
                                         <a href="${pageContext.request.contextPath}/gallery/details?id=${gallery.galleryId}" class="btn btn-outline-primary">
                                             View Gallery

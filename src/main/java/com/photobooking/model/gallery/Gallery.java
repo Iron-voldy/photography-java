@@ -231,11 +231,13 @@ public class Gallery implements Serializable {
         gallery.setStatus(GalleryStatus.valueOf(parts[index++]));
 
         // Parse photoIds
-        String photoIdsStr = parts[index++];
-        if (!photoIdsStr.isEmpty()) {
-            String[] photoIdsArray = photoIdsStr.split("\\|");
-            for (String photoId : photoIdsArray) {
-                gallery.addPhotoId(photoId);
+        if (index < parts.length) {
+            String photoIdsStr = parts[index++];
+            if (!photoIdsStr.isEmpty()) {
+                String[] photoIdsArray = photoIdsStr.split("\\|");
+                for (String photoId : photoIdsArray) {
+                    gallery.addPhotoId(photoId);
+                }
             }
         }
 
