@@ -95,7 +95,7 @@ public class DeleteServiceServlet extends HttpServlet {
             } else {
                 session.setAttribute("errorMessage", "Failed to delete service package");
                 LOGGER.warning("Failed to delete service package: " + packageId);
-            } 
+            }
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error deleting service: " + e.getMessage(), e);

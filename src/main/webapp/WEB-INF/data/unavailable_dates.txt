@@ -1,0 +1,3 @@
+01bb8022-c708-4c0b-b634-edfb53c34dc9,bca48ccf-1b27-4e9a-a859-1a350319e0cc,2025-05-05,true,,,holiday
+af5942ee-cb9d-4884-83f3-37760c7dab79,bca48ccf-1b27-4e9a-a859-1a350319e0cc,2025-05-06,true,,,holiday
+3a31d8c5-18ac-4246-95a0-67da298a0d63,bca48ccf-1b27-4e9a-a859-1a350319e0cc,2025-05-04,false,09:00,10:00,Blocked time slot
