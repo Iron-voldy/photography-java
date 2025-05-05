@@ -1,525 +1,245 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-
-<%@ page import="com.photobooking.model.photographer.Photographer" %>
-<%@ page import="com.photobooking.model.photographer.PhotographerManager" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.ArrayList" %>
-<%@ page import="com.photobooking.util.ValidationUtil" %>
-
-<%
-    // Add direct access to photographers for debugging
-    PhotographerManager debugManager = new PhotographerManager(application);
-    List<Photographer> debugPhotographers = debugManager.getAllPhotographers();
-    pageContext.setAttribute("debugPhotographers", debugPhotographers);
-%>
-
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find Photographers - SnapEvent</title>
-
-    <!-- Favicon -->
-    <link rel="icon" href="${pageContext.request.contextPath}/assets/images/favicon.ico" type="image/x-icon">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Custom CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-        }
-
-        .page-header {
-            background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
-            color: white;
-            padding: 60px 0;
-            text-align: center;
-            margin-bottom: 40px;
-            border-radius: 0 0 20px 20px;
-        }
-
-        .filter-section {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-
         .photographer-card {
-            border: none;
-            border-radius: 15px;
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.3s;
             height: 100%;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
         }
-
         .photographer-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
         }
-
         .photographer-thumbnail {
             height: 200px;
             object-fit: cover;
         }
-
-        .photographer-card .card-body {
-            padding: 20px;
+        .filter-form {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
         }
-
-        .rating-stars {
-            color: #ffc107;
+        .rating-display {
+            color: #ffcc00;
         }
-
-        .badge-specialty {
-            background-color: #4361ee;
-            color: white;
-            font-weight: 500;
+        .specialty-badge {
             margin-right: 5px;
             margin-bottom: 5px;
-            font-size: 0.75rem;
         }
-
-        .btn-book {
-            background-color: #4361ee;
-            border-color: #4361ee;
-            padding: 8px 16px;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-book:hover {
-            background-color: #3a56d4;
-            border-color: #3a56d4;
-            transform: translateY(-2px);
-        }
-
-        .pagination .page-link {
-            color: #4361ee;
-            border-radius: 5px;
-            margin: 0 3px;
-        }
-
-        .pagination .page-item.active .page-link {
-            background-color: #4361ee;
-            border-color: #4361ee;
-        }
-
-        .location-badge {
-            display: inline-block;
+        .search-container {
             background-color: #f8f9fa;
-            padding: 6px 12px;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            margin-bottom: 10px;
-        }
-
-        .no-photographers-message {
-            text-align: center;
-            padding: 60px 20px;
-            background-color: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            margin-bottom: 40px;
-        }
-
-        .no-photographers-message h3 {
-            color: #4361ee;
-            margin-bottom: 20px;
-        }
-
-        .no-photographers-message .icon {
-            font-size: 4rem;
-            color: #4361ee;
-            margin-bottom: 20px;
-        }
-
-        .debug-info {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 20px;
-            font-family: monospace;
-            font-size: 0.8rem;
+            padding: 30px 0;
+            margin-bottom: 30px;
         }
     </style>
 </head>
 <body>
-    <!-- Include Header -->
-    <jsp:include page="/includes/header.jsp" />
+    <jsp:include page="../includes/header.jsp" />
 
-    <!-- Page Header -->
-    <section class="page-header">
+    <!-- Search Section -->
+    <div class="search-container">
         <div class="container">
-            <h1 class="display-4 fw-bold">Find Your Perfect Photographer</h1>
-            <p class="lead">Discover talented photographers for any event or occasion</p>
-        </div>
-    </section>
+            <h1 class="mb-4">Find Your Perfect Photographer</h1>
 
-    <div class="container">
-        <!-- Include Messages -->
-        <jsp:include page="/includes/messages.jsp" />
-
-        <!-- Debug Information (remove in production) -->
-        <div class="debug-info">
-            <h5>Debug Information</h5>
-            <p><strong>Request Attribute Photographers:</strong> Count = ${fn:length(photographers)}</p>
-            <p><strong>Direct Database Access:</strong> Count = ${fn:length(debugPhotographers)}</p>
-            <p><strong>Debug photographers:</strong>
-                <c:forEach var="dp" items="${debugPhotographers}">
-                    <br>${dp.photographerId}: ${dp.businessName} (${dp.userId})
-                </c:forEach>
-            </p>
-            <p><strong>Other attributes:</strong> currentPage=${currentPage}, totalPages=${totalPages}, ${debugInfo}</p>
-        </div>
-
-        <!-- Filter Section -->
-        <div class="filter-section">
-            <form action="${pageContext.request.contextPath}/photographer/list" method="get" id="filterForm">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label for="search" class="form-label">Search</label>
+            <form action="${pageContext.request.contextPath}/photographer/list" method="get" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="search" name="search"
-                                   placeholder="Photographer name, specialty..." value="${param.search}">
+                            <input type="text" class="form-control" name="search" placeholder="Search by name, specialty, or location..."
+                                   value="${param.search}">
                         </div>
                     </div>
-
-                    <div class="col-md-3">
-                        <label for="specialty" class="form-label">Specialty</label>
-                        <select class="form-select" id="specialty" name="specialty">
+                    <div class="col-md-4">
+                        <select name="specialty" class="form-select">
                             <option value="">All Specialties</option>
                             <c:forEach var="specialty" items="${specialties}">
-                                <option value="${specialty}" ${param.specialty == specialty ? 'selected' : ''}>${specialty}</option>
+                                <option value="${specialty}" ${param.specialty == specialty ? 'selected' : ''}>
+                                    ${specialty}
+                                </option>
                             </c:forEach>
                         </select>
                     </div>
-
-                    <div class="col-md-3">
-                        <label for="location" class="form-label">Location</label>
-                        <input type="text" class="form-control" id="location" name="location"
-                               placeholder="City, state, etc." value="${param.location}">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="sortBy" class="form-label">Sort By</label>
-                        <select class="form-select" id="sortBy" name="sortBy">
-                            <option value="rating-desc" ${param.sortBy == 'rating-desc' || empty param.sortBy ? 'selected' : ''}>
-                                Highest Rating
-                            </option>
-                            <option value="price-asc" ${param.sortBy == 'price-asc' ? 'selected' : ''}>
-                                Price: Low to High
-                            </option>
-                            <option value="price-desc" ${param.sortBy == 'price-desc' ? 'selected' : ''}>
-                                Price: High to Low
-                            </option>
-                            <option value="experience-desc" ${param.sortBy == 'experience-desc' ? 'selected' : ''}>
-                                Most Experienced
-                            </option>
-                            <option value="name-asc" ${param.sortBy == 'name-asc' ? 'selected' : ''}>
-                                Name: A to Z
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="col-12 d-flex justify-content-end gap-2">
-                        <a href="${pageContext.request.contextPath}/photographer/list"
-                           class="btn btn-outline-secondary px-4">
-                            <i class="bi bi-x-lg me-2"></i>Clear
-                        </a>
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-filter me-2"></i>Apply Filters
-                        </button>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Search</button>
                     </div>
                 </div>
             </form>
         </div>
+    </div>
 
-        <!-- Photographers Grid -->
-        <div class="row g-4 mb-4">
-            <c:choose>
-                <c:when test="${not empty photographers}">
-                    <c:forEach var="photographer" items="${photographers}">
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card photographer-card">
-                                <c:choose>
-                                    <c:when test="${not empty photographer.portfolioImageUrls}">
-                                        <img src="${photographer.portfolioImageUrls[0]}" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
-                                    </c:when>
-                                    <c:otherwise>
-                                        <img src="${pageContext.request.contextPath}/assets/images/default-photographer.jpg" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
-                                    </c:otherwise>
-                                </c:choose>
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h5 class="card-title mb-0">${photographer.businessName}</h5>
-                                        <c:choose>
-                                            <c:when test="${photographer.verified}">
-                                                <span class="badge bg-success">Verified</span>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <span class="badge bg-warning text-dark">New</span>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </div>
-                                    <p class="location-badge">
-                                        <i class="bi bi-geo-alt me-1"></i>${photographer.location}
-                                    </p>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="rating-stars me-2">
-                                            <c:forEach begin="1" end="5" varStatus="star">
-                                                <c:choose>
-                                                    <c:when test="${star.index <= photographer.rating}">
-                                                        <i class="bi bi-star-fill"></i>
-                                                    </c:when>
-                                                    <c:when test="${star.index > photographer.rating && star.index < photographer.rating + 1}">
-                                                        <i class="bi bi-star-half"></i>
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <i class="bi bi-star"></i>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </c:forEach>
-                                        </div>
-                                        <span>${photographer.rating} (${photographer.reviewCount} reviews)</span>
-                                    </div>
-                                    <div class="mb-3">
-                                        <c:forEach var="specialty" items="${photographer.specialties}">
-                                            <span class="badge badge-specialty">${specialty}</span>
-                                        </c:forEach>
-                                    </div>
-                                    <p class="card-text text-muted small mb-3">
-                                        <c:choose>
-                                            <c:when test="${fn:length(photographer.biography) > 100}">
-                                                ${fn:substring(photographer.biography, 0, 100)}...
-                                            </c:when>
-                                            <c:otherwise>
-                                                ${photographer.biography}
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold text-primary">From $${photographer.basePrice}/hr</span>
-                                        <a href="${pageContext.request.contextPath}/photographer/profile?id=${photographer.photographerId}"
-                                           class="btn btn-outline-primary">View Profile</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </c:forEach>
-                </c:when>
-                <c:when test="${not empty debugPhotographers}">
-                    <div class="col-12 mb-4">
-                        <div class="alert alert-warning">
-                            <h4>Found photographers in database but not in request!</h4>
-                            <p>Showing photographers directly from database as a fallback.</p>
-                        </div>
-                    </div>
-                    <c:forEach var="photographer" items="${debugPhotographers}">
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card photographer-card">
-                                <img src="${pageContext.request.contextPath}/assets/images/default-photographer.jpg" class="card-img-top photographer-thumbnail" alt="${photographer.businessName}">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h5 class="card-title mb-0">${photographer.businessName}</h5>
-                                        <c:choose>
-                                            <c:when test="${photographer.verified}">
-                                                <span class="badge bg-success">Verified</span>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <span class="badge bg-warning text-dark">New</span>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </div>
-                                    <p class="location-badge">
-                                        <i class="bi bi-geo-alt me-1"></i>${photographer.location}
-                                    </p>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="rating-stars me-2">
-                                            <c:forEach begin="1" end="5" varStatus="star">
-                                                <c:choose>
-                                                    <c:when test="${star.index <= photographer.rating}">
-                                                        <i class="bi bi-star-fill"></i>
-                                                    </c:when>
-                                                    <c:when test="${star.index > photographer.rating && star.index < photographer.rating + 1}">
-                                                        <i class="bi bi-star-half"></i>
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <i class="bi bi-star"></i>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </c:forEach>
-                                        </div>
-                                        <span>${photographer.rating} (${photographer.reviewCount} reviews)</span>
-                                    </div>
-                                    <div class="mb-3">
-                                        <c:forEach var="specialty" items="${photographer.specialties}">
-                                            <span class="badge badge-specialty">${specialty}</span>
-                                        </c:forEach>
-                                    </div>
-                                    <p class="card-text text-muted small mb-3">
-                                        <c:choose>
-                                            <c:when test="${fn:length(photographer.biography) > 100}">
-                                                ${fn:substring(photographer.biography, 0, 100)}...
-                                            </c:when>
-                                            <c:otherwise>
-                                                ${photographer.biography}
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold text-primary">From $${photographer.basePrice}/hr</span>
-                                        <a href="${pageContext.request.contextPath}/photographer/profile?id=${photographer.photographerId}"
-                                           class="btn btn-outline-primary">View Profile</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </c:forEach>
-                </c:when>
-                <c:otherwise>
-                    <!-- No Photographers Message -->
-                    <div class="col-12">
-                        <div class="no-photographers-message">
-                            <div class="icon">
-                                <i class="bi bi-camera"></i>
-                            </div>
-                            <h3>No Photographers Found</h3>
-                            <p class="text-muted mb-4">
-                                We couldn't find any photographers matching your search criteria.
-                                <br>Try adjusting your filters or check back later.
-                            </p>
-                            <a href="${pageContext.request.contextPath}/photographer/list" class="btn btn-primary">
-                                <i class="bi bi-arrow-clockwise me-2"></i>Clear Filters
-                            </a>
-                        </div>
-                    </div>
-                </c:otherwise>
-            </c:choose>
+    <div class="container">
+        <jsp:include page="../includes/messages.jsp" />
+
+        <!-- Debug info - uncomment if needed -->
+        <div class="alert alert-secondary mb-3">
+            Photographers count: ${photographers.size()}
+            ${debugInfo}
         </div>
 
-        <!-- Pagination -->
-        <c:if test="${totalPages > 0}">
-            <nav aria-label="Photographer search results pages">
-                <ul class="pagination justify-content-center">
-                    <c:if test="${currentPage > 1}">
-                        <li class="page-item">
-                            <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage - 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
-                                <i class="bi bi-chevron-left"></i>
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-lg-3">
+                <div class="filter-form">
+                    <h5>Filter Photographers</h5>
+                    <form action="${pageContext.request.contextPath}/photographer/list" method="get" id="filterForm">
+                        <input type="hidden" name="search" value="${param.search}">
+                        <input type="hidden" name="specialty" value="${param.specialty}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-control" name="location" placeholder="Enter location"
+                                   value="${param.location}" onchange="document.getElementById('filterForm').submit()">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Sort By</label>
+                            <select class="form-select" name="sortBy" onchange="document.getElementById('filterForm').submit()">
+                                <option value="rating-desc" ${param.sortBy == 'rating-desc' || param.sortBy == null ? 'selected' : ''}>
+                                    Highest Rating
+                                </option>
+                                <option value="price-asc" ${param.sortBy == 'price-asc' ? 'selected' : ''}>
+                                    Price: Low to High
+                                </option>
+                                <option value="price-desc" ${param.sortBy == 'price-desc' ? 'selected' : ''}>
+                                    Price: High to Low
+                                </option>
+                                <option value="experience-desc" ${param.sortBy == 'experience-desc' ? 'selected' : ''}>
+                                    Most Experienced
+                                </option>
+                                <option value="name-asc" ${param.sortBy == 'name-asc' ? 'selected' : ''}>
+                                    Name: A to Z
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="${pageContext.request.contextPath}/photographer/list" class="btn btn-outline-secondary">
+                                Clear Filters
                             </a>
-                        </li>
-                    </c:if>
-
-                    <c:forEach begin="1" end="${totalPages}" var="i">
-                        <c:choose>
-                            <c:when test="${currentPage == i}">
-                                <li class="page-item active">
-                                    <span class="page-link">${i}</span>
-                                </li>
-                            </c:when>
-                            <c:otherwise>
-                                <li class="page-item">
-                                    <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${i}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">${i}</a>
-                                </li>
-                            </c:otherwise>
-                        </c:choose>
-                    </c:forEach>
-
-                    <c:if test="${currentPage < totalPages}">
-                        <li class="page-item">
-                            <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage + 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </c:if>
-                </ul>
-            </nav>
-        </c:if>
-
-        <!-- Photography Tips Section -->
-        <div class="card mt-5 mb-5">
-            <div class="card-body p-4">
-                <h3 class="card-title">Finding the Right Photographer</h3>
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <div class="d-flex">
-                            <div class="flex-shrink-0">
-                                <i class="bi bi-camera fs-2 text-primary"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h5>Check Their Portfolio</h5>
-                                <p class="text-muted">Look at their past work to make sure their style matches your vision.</p>
-                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex">
-                            <div class="flex-shrink-0">
-                                <i class="bi bi-chat-left-quote fs-2 text-primary"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h5>Read the Reviews</h5>
-                                <p class="text-muted">Client reviews give insights into reliability, professionalism, and quality.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex">
-                            <div class="flex-shrink-0">
-                                <i class="bi bi-calendar-check fs-2 text-primary"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h5>Book in Advance</h5>
-                                <p class="text-muted">Secure your date with top photographers by booking early, especially for weddings.</p>
-                            </div>
-                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Photographers List -->
+            <div class="col-lg-9">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Photographers</h2>
+                    <div>
+                        <span>Page ${currentPage} of ${totalPages}</span>
                     </div>
                 </div>
+
+                <c:choose>
+                    <c:when test="${not empty photographers}">
+                        <div class="row">
+                            <c:forEach var="photographer" items="${photographers}">
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card photographer-card h-100">
+                                        <!-- Default image -->
+                                        <div class="bg-light d-flex justify-content-center align-items-center photographer-thumbnail">
+                                            <i class="bi bi-camera" style="font-size: 50px; color: #6c757d;"></i>
+                                        </div>
+                                        <div class="card-body">
+                                            <h5 class="card-title">
+                                                <a href="${pageContext.request.contextPath}/photographer/profile?id=${photographer.photographerId}"
+                                                   class="text-decoration-none">
+                                                    ${photographer.businessName}
+                                                </a>
+                                            </h5>
+                                            <p class="card-text text-muted">
+                                                <i class="bi bi-geo-alt me-1"></i>${photographer.location}
+                                            </p>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="rating-display me-2">
+                                                    <c:forEach begin="1" end="5" var="i">
+                                                        <i class="bi ${i <= photographer.rating ? 'bi-star-fill' : 'bi-star'}"></i>
+                                                    </c:forEach>
+                                                </div>
+                                                <span>${photographer.rating} (${photographer.reviewCount})</span>
+                                            </div>
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    <c:if test="${photographer.yearsOfExperience > 0}">
+                                                        <i class="bi bi-calendar-check me-1"></i>
+                                                        ${photographer.yearsOfExperience} years experience
+                                                    </c:if>
+                                                </small>
+                                            </p>
+
+                                            <!-- Safely display specialties -->
+                                            <c:if test="${not empty photographer.specialties}">
+                                                <div class="mb-3">
+                                                    <c:forEach var="specialty" items="${photographer.specialties}" varStatus="status">
+                                                        <c:if test="${status.index < 3}">
+                                                            <span class="badge bg-secondary me-1">${specialty}</span>
+                                                        </c:if>
+                                                    </c:forEach>
+                                                </div>
+                                            </c:if>
+
+                                            <div class="d-grid">
+                                                <a href="${pageContext.request.contextPath}/photographer/profile?id=${photographer.photographerId}"
+                                                   class="btn btn-outline-primary">View Profile</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+
+                        <!-- Pagination -->
+                        <c:if test="${totalPages > 1}">
+                            <nav aria-label="Page navigation" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    <!-- Previous page link -->
+                                    <li class="page-item ${currentPage == 1 ? 'disabled' : ''}">
+                                        <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage - 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}"
+                                           aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+
+                                    <!-- Page number links -->
+                                    <c:forEach begin="1" end="${totalPages}" var="i">
+                                        <li class="page-item ${currentPage == i ? 'active' : ''}">
+                                            <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${i}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}">
+                                                ${i}
+                                            </a>
+                                        </li>
+                                    </c:forEach>
+
+                                    <!-- Next page link -->
+                                    <li class="page-item ${currentPage == totalPages ? 'disabled' : ''}">
+                                        <a class="page-link" href="${pageContext.request.contextPath}/photographer/list?page=${currentPage + 1}&search=${param.search}&specialty=${param.specialty}&location=${param.location}&sortBy=${param.sortBy}"
+                                           aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </c:if>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="alert alert-info">
+                            No photographers found matching your criteria. Please try different filters.
+                        </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </div>
     </div>
 
-    <!-- Include Footer -->
-    <jsp:include page="/includes/footer.jsp" />
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle clear button
-            document.querySelector('.btn-outline-secondary').addEventListener('click', function(e) {
-                e.preventDefault();
-                document.getElementById('search').value = '';
-                document.getElementById('specialty').value = '';
-                document.getElementById('location').value = '';
-                document.getElementById('sortBy').value = 'rating-desc';
-
-                // Submit the form with cleared values
-                document.getElementById('filterForm').submit();
-            });
-
-            // Auto-submit form when sort option changes
-            document.getElementById('sortBy').addEventListener('change', function() {
-                document.getElementById('filterForm').submit();
-            });
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

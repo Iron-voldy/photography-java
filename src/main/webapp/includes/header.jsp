@@ -17,7 +17,7 @@
                     <a class="nav-link" href="${pageContext.request.contextPath}/">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="${pageContext.request.contextPath}/photographer/photographer_list.jsp">Photographers</a>
+                    <a class="nav-link" href="${pageContext.request.contextPath}/photographer/list">Photographers</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="${pageContext.request.contextPath}/gallery/gallery_list.jsp">Galleries</a>
@@ -61,6 +61,11 @@
                                             <i class="bi bi-calendar-check me-2"></i>My Bookings
                                         </a>
                                     </li>
+                                    <li>
+                                        <a class="dropdown-item" href="${pageContext.request.contextPath}/review/myreviews">
+                                            <i class="bi bi-star me-2"></i>My Reviews
+                                        </a>
+                                    </li>
                                 </c:if>
                                 <c:if test="${sessionScope.userType == 'photographer'}">
                                     <li>
@@ -81,6 +86,11 @@
                                     <li>
                                         <a class="dropdown-item" href="${pageContext.request.contextPath}/gallery/gallery_list.jsp?userOnly=true">
                                             <i class="bi bi-images me-2"></i>My Galleries
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="${pageContext.request.contextPath}/review/myreviews">
+                                            <i class="bi bi-star me-2"></i>My Reviews
                                         </a>
                                     </li>
                                 </c:if>

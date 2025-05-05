@@ -13,7 +13,10 @@ import com.photobooking.model.photographer.Photographer;
 import com.photobooking.model.photographer.PhotographerManager;
 import com.photobooking.model.photographer.PhotographerService;
 import com.photobooking.model.photographer.PhotographerServiceManager;
+import com.photobooking.model.review.Review;
+import com.photobooking.model.review.ReviewManager;
 import com.photobooking.model.user.User;
+import com.photobooking.model.user.UserManager;
 import com.photobooking.util.ValidationUtil;
 
 /**
@@ -88,9 +91,22 @@ public class PhotographerProfileServlet extends HttpServlet {
         PhotographerServiceManager serviceManager = new PhotographerServiceManager();
         List<PhotographerService> services = serviceManager.getActiveServicesByPhotographer(photographerId);
 
+        // Load reviews for this photographer
+        ReviewManager reviewManager = new ReviewManager();
+        List<Review> reviews = reviewManager.getPhotographerReviews(photographerId);
+        double averageRating = reviewManager.getAverageRating(photographerId);
+        int[] ratingDistribution = reviewManager.getRatingDistribution(photographerId);
+
+        // Get UserManager for displaying client names
+        UserManager userManager = new UserManager();
+
         // Set attributes for the view
         request.setAttribute("photographer", photographer);
         request.setAttribute("services", services);
+        request.setAttribute("reviews", reviews);
+        request.setAttribute("averageRating", averageRating);
+        request.setAttribute("ratingDistribution", ratingDistribution);
+        request.setAttribute("userManager", userManager);
 
         // Forward to photographer profile JSP
         request.getRequestDispatcher("/photographer/photographer_profile.jsp").forward(request, response);
