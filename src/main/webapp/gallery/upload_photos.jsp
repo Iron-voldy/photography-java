@@ -1,4 +1,3 @@
-<%-- upload_photos.jsp --%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -157,7 +156,6 @@
 
                                     <div id="existingGalleryContainer" class="ps-4">
                                         <div class="mb-3">
-                                            <!-- Update the gallery selection dropdown in upload_photos.jsp -->
                                             <select class="form-select" id="galleryId" name="galleryId">
                                                 <option value="">Select Gallery</option>
                                                 <c:forEach var="gallery" items="${galleries}">
@@ -240,6 +238,9 @@
                             <h5>Step 2: Upload Photos</h5>
 
                             <div class="dropzone-container">
+                                <!-- Hidden file input field for non-JS fallback and direct file input -->
+                                <input type="file" name="photos" multiple accept="image/*" id="photoFileInput" style="display: none;">
+
                                 <div id="dropzoneUpload" class="dropzone">
                                     <div class="dz-message">
                                         <i class="bi bi-cloud-arrow-up upload-icon"></i>
@@ -369,6 +370,7 @@
             const newGalleryRadio = document.querySelector('input[value="new"]');
             const existingGalleryContainer = document.getElementById('existingGalleryContainer');
             const newGalleryContainer = document.getElementById('newGalleryContainer');
+            const photoFileInput = document.getElementById('photoFileInput');
 
             // Check if there are galleries available
             const galleriesAvailable = ${not empty galleries};
@@ -415,7 +417,15 @@
                 addRemoveLinks: true,
                 createImageThumbnails: true,
                 thumbnailWidth: 120,
-                thumbnailHeight: 120
+                thumbnailHeight: 120,
+                clickable: true,
+                // Important: This connects the dropzone to the hidden file input
+                hiddenInputContainer: document.getElementById('photoFileInput')
+            });
+
+            // When clicking on the dropzone, trigger the file input
+            myDropzone.on("clicking", function() {
+                photoFileInput.click();
             });
 
             // Update progress bar
@@ -456,16 +466,34 @@
 
                 // Check if files are selected
                 if (myDropzone.files.length === 0) {
-                    alert('Please select files to upload');
-                    isValid = false;
+                    // Also check the regular file input in case Dropzone failed
+                    if (photoFileInput.files.length === 0) {
+                        alert('Please select files to upload');
+                        isValid = false;
+                    } else {
+                        // If files were selected via the regular input, submit the form directly
+                        if (isValid) {
+                            document.getElementById('uploadForm').submit();
+                            return;
+                        }
+                    }
                 }
 
                 if (isValid) {
                     // Add form data to dropzone
-                    const formData = new FormData(document.getElementById('uploadForm'));
+                    myDropzone.options.params = {
+                        galleryType: document.querySelector('input[name="galleryType"]:checked').value,
+                        autoProcess: document.getElementById('autoProcess').checked
+                    };
 
-                    for (const [key, value] of formData.entries()) {
-                        myDropzone.options.params[key] = value;
+                    if (existingGalleryRadio.checked) {
+                        myDropzone.options.params.galleryId = document.getElementById('galleryId').value;
+                    } else {
+                        myDropzone.options.params.galleryTitle = document.getElementById('galleryTitle').value;
+                        myDropzone.options.params.galleryDescription = document.getElementById('galleryDescription').value;
+                        myDropzone.options.params.galleryCategory = document.getElementById('galleryCategory').value;
+                        myDropzone.options.params.galleryBooking = document.getElementById('galleryBooking').value;
+                        myDropzone.options.params.galleryPublic = document.getElementById('galleryPublic').checked;
                     }
 
                     // Process the queue
@@ -493,6 +521,16 @@
                         window.location.href = "${pageContext.request.contextPath}/gallery/list?userOnly=true";
                     }
                 }, 1000);
+            });
+
+            // Also handle direct file input changes (fallback if dropzone doesn't work)
+            photoFileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    // Add these files to dropzone
+                    for (let i = 0; i < this.files.length; i++) {
+                        myDropzone.addFile(this.files[i]);
+                    }
+                }
             });
         });
     </script>

@@ -2,6 +2,8 @@ package com.photobooking.servlet.gallery;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,17 @@ public class UploadPhotoServlet extends HttpServlet {
     private static final Logger LOGGER = Logger.getLogger(UploadPhotoServlet.class.getName());
 
     @Override
+    public void init() throws ServletException {
+        super.init();
+        // Initialize necessary data directories and files
+        FileHandler.createDirectory("data");
+        FileHandler.createDirectory("photos");
+        FileHandler.createDirectory("thumbnails");
+        FileHandler.ensureFileExists("galleries.txt");
+        FileHandler.ensureFileExists("photos.txt");
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
@@ -55,6 +68,12 @@ public class UploadPhotoServlet extends HttpServlet {
             return;
         }
 
+        // Print all request parameters for debugging
+        LOGGER.info("Request parameters:");
+        for (String param : request.getParameterMap().keySet()) {
+            LOGGER.info(param + ": " + request.getParameter(param));
+        }
+
         // Get parameters
         String galleryId = request.getParameter("galleryId");
         String galleryType = request.getParameter("galleryType");
@@ -64,10 +83,22 @@ public class UploadPhotoServlet extends HttpServlet {
         FileHandler.createDirectory("photos");
         FileHandler.createDirectory("thumbnails");
 
+        // Create absolute paths for these directories
+        String webAppPath = getServletContext().getRealPath("/");
+        String photosPath = webAppPath + File.separator + "photos";
+        String thumbnailsPath = webAppPath + File.separator + "thumbnails";
+
+        // Create directories with absolute paths
+        new File(photosPath).mkdirs();
+        new File(thumbnailsPath).mkdirs();
+
+        LOGGER.info("Photos directory path: " + photosPath);
+        LOGGER.info("Thumbnails directory path: " + thumbnailsPath);
+
         // Validate gallery ID for existing gallery
         if ("existing".equals(galleryType) && (galleryId == null || galleryId.trim().isEmpty())) {
             session.setAttribute("errorMessage", "Gallery ID is required when selecting an existing gallery");
-            response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+            response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
             return;
         }
 
@@ -75,14 +106,8 @@ public class UploadPhotoServlet extends HttpServlet {
             GalleryManager galleryManager = new GalleryManager(getServletContext());
             PhotoManager photoManager = new PhotoManager(getServletContext());
 
-            // Ensure we have a consistent photographerId - use what's in session
-            String photographerId = (String) session.getAttribute("photographerId");
-            if (photographerId == null) {
-                // Fall back to userId if no photographerId in session
-                photographerId = currentUser.getUserId();
-                session.setAttribute("photographerId", photographerId);
-                LOGGER.info("Setting photographerId in session to userId: " + photographerId);
-            }
+            // Get photographer ID - directly use user ID
+            String photographerId = currentUser.getUserId();
             LOGGER.info("Using photographerId: " + photographerId + " for uploads");
 
             // Create a new gallery if requested
@@ -96,7 +121,7 @@ public class UploadPhotoServlet extends HttpServlet {
 
                 if (ValidationUtil.isNullOrEmpty(galleryTitle)) {
                     session.setAttribute("errorMessage", "Gallery title is required");
-                    response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+                    response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
                     return;
                 }
 
@@ -104,7 +129,7 @@ public class UploadPhotoServlet extends HttpServlet {
                 newGallery.setTitle(galleryTitle);
                 newGallery.setDescription(galleryDescription);
                 newGallery.setCategory(galleryCategory);
-                newGallery.setPhotographerId(photographerId); // Use consistent photographerId
+                newGallery.setPhotographerId(photographerId);
 
                 LOGGER.info("Creating new gallery with title: " + galleryTitle +
                         ", category: " + galleryCategory +
@@ -120,7 +145,7 @@ public class UploadPhotoServlet extends HttpServlet {
                 boolean created = galleryManager.createGallery(newGallery);
                 if (!created) {
                     session.setAttribute("errorMessage", "Failed to create gallery");
-                    response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+                    response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
                     return;
                 }
 
@@ -132,30 +157,35 @@ public class UploadPhotoServlet extends HttpServlet {
 
                 if (gallery == null) {
                     session.setAttribute("errorMessage", "Gallery not found");
-                    response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+                    response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
                     return;
                 }
 
-                if (!gallery.getPhotographerId().equals(photographerId) &&
-                        !gallery.getPhotographerId().equals(currentUser.getUserId())) {
+                if (!gallery.getPhotographerId().equals(photographerId)) {
+                    LOGGER.warning("Gallery photographer ID (" + gallery.getPhotographerId() +
+                            ") doesn't match current user ID (" + photographerId + ")");
                     session.setAttribute("errorMessage", "You don't have permission to upload photos to this gallery");
-                    response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+                    response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
                     return;
                 }
             }
 
             // Process photo uploads
+            LOGGER.info("Looking for photo parts in the request...");
             List<Part> fileParts = new ArrayList<>();
             for (Part part : request.getParts()) {
-                if (part.getName().equals("photos") && part.getSize() > 0) {
+                LOGGER.info("Found part: " + part.getName() + " with size: " + part.getSize());
+                // Key change: Look for any part name that contains "photos"
+                if (part.getName().contains("photos") && part.getSize() > 0) {
                     fileParts.add(part);
                     LOGGER.info("Found photo part: " + getFileName(part) + ", size: " + part.getSize());
                 }
             }
 
             if (fileParts.isEmpty()) {
+                LOGGER.warning("No photo parts found in the request");
                 session.setAttribute("errorMessage", "No files uploaded");
-                response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+                response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
                 return;
             }
 
@@ -186,6 +216,15 @@ public class UploadPhotoServlet extends HttpServlet {
                     fileData = new byte[(int) filePart.getSize()];
                     inputStream.read(fileData);
                     LOGGER.info("Read " + fileData.length + " bytes for " + originalFileName);
+                }
+
+                // Manual saving of file for testing
+                String testFilePath = photosPath + File.separator + System.currentTimeMillis() + "_" + originalFileName;
+                try (FileOutputStream fos = new FileOutputStream(testFilePath)) {
+                    fos.write(fileData);
+                    LOGGER.info("Test file saved to: " + testFilePath);
+                } catch (Exception e) {
+                    LOGGER.log(Level.SEVERE, "Error saving test file: " + e.getMessage(), e);
                 }
 
                 // Upload photo
@@ -219,13 +258,14 @@ public class UploadPhotoServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/gallery/details?id=" + galleryId);
             } else {
                 session.setAttribute("errorMessage", "Failed to upload photos");
-                response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+                response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
             }
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error uploading photos: " + e.getMessage(), e);
+            e.printStackTrace();
             session.setAttribute("errorMessage", "An error occurred during upload: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
+            response.sendRedirect(request.getContextPath() + "/gallery/upload-form");
         }
     }
 

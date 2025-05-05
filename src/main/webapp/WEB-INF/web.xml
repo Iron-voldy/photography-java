@@ -15,6 +15,18 @@
     <welcome-file>index.jsp</welcome-file>
   </welcome-file-list>
 
+  <!-- Static resource mapping for photos directory -->
+  <servlet-mapping>
+    <servlet-name>default</servlet-name>
+    <url-pattern>/photos/*</url-pattern>
+  </servlet-mapping>
+
+  <!-- Static resource mapping for thumbnails directory -->
+  <servlet-mapping>
+    <servlet-name>default</servlet-name>
+    <url-pattern>/thumbnails/*</url-pattern>
+  </servlet-mapping>
+
   <!-- Error Pages -->
   <error-page>
     <error-code>404</error-code>
