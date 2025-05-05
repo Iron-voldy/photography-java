@@ -1,6 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+
 <%@ page import="com.photobooking.model.booking.BookingManager" %>
 <%@ page import="com.photobooking.model.booking.Booking" %>
 <%@ page import="com.photobooking.model.user.User" %>
@@ -10,7 +12,6 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.time.LocalDateTime" %>
-<%@ page import="java.time.format.DateTimeFormatter" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.HashMap" %>
 
@@ -240,7 +241,8 @@
                                                         <h6 class="mb-1">${booking.eventType}</h6>
                                                         <p class="text-muted mb-1">
                                                             <i class="bi bi-calendar3 me-2"></i>
-                                                            <fmt:formatDate value="${booking.eventDateTime}" pattern="MMMM d, yyyy 'at' h:mm a" />
+                                                            <% pageContext.setAttribute("dateTimeFormatter", java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm a")); %>
+                                                            ${booking.eventDateTime.format(dateTimeFormatter)}
                                                         </p>
                                                         <p class="text-muted mb-1">
                                                             <i class="bi bi-geo-alt me-2"></i>${booking.eventLocation}

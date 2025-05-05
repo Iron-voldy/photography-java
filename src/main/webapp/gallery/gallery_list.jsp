@@ -2,6 +2,69 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="com.photobooking.model.gallery.Gallery" %>
+<%@ page import="com.photobooking.model.gallery.GalleryManager" %>
+<%@ page import="com.photobooking.model.gallery.Photo" %>
+<%@ page import="com.photobooking.model.gallery.PhotoManager" %>
+<%@ page import="java.util.List" %>
+<%@ page import="com.photobooking.model.user.User" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Map" %>
+
+<%
+    // Get the current user from session
+    User currentUser = (User) session.getAttribute("user");
+
+    // Check if we should show all galleries or just user galleries
+    boolean userOnly = "true".equals(request.getParameter("userOnly"));
+
+    // Initialize gallery manager
+    GalleryManager galleryManager = new GalleryManager(application);
+    PhotoManager photoManager = new PhotoManager(application);
+
+    // Get appropriate galleries based on parameters
+    List<Gallery> galleries = null;
+
+    if (userOnly && currentUser != null) {
+        if (currentUser.getUserType() == User.UserType.PHOTOGRAPHER) {
+            // Get photographer's galleries
+            galleries = galleryManager.getGalleriesByPhotographer(currentUser.getUserId());
+        } else if (currentUser.getUserType() == User.UserType.CLIENT) {
+            // Get galleries shared with client
+            galleries = galleryManager.getGalleriesByClient(currentUser.getUserId());
+        }
+    } else {
+        // Get all published galleries for public view
+        List<Gallery> allGalleries = galleryManager.searchGalleries("");
+        galleries = new java.util.ArrayList<>();
+
+        for (Gallery gallery : allGalleries) {
+            if (gallery.getStatus() == Gallery.GalleryStatus.PUBLISHED) {
+                galleries.add(gallery);
+            }
+        }
+    }
+
+    // Store galleries in request for display
+    request.setAttribute("galleries", galleries);
+
+    // Get cover photos for each gallery
+    Map<String, Photo> coverPhotos = new HashMap<>();
+
+    if (galleries != null) {
+        for (Gallery gallery : galleries) {
+            if (gallery.getCoverPhotoId() != null) {
+                Photo coverPhoto = photoManager.getPhotoById(gallery.getCoverPhotoId());
+                if (coverPhoto != null) {
+                    coverPhotos.put(gallery.getGalleryId(), coverPhoto);
+                }
+            }
+        }
+    }
+
+    request.setAttribute("coverPhotos", coverPhotos);
+%>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,6 +121,7 @@
         .gallery-thumbnail {
             height: 200px;
             object-fit: cover;
+            background-color: #e9ecef; /* Default background if image fails to load */
         }
 
         .gallery-card .card-body {
@@ -94,6 +158,17 @@
             color: #4361ee;
             margin-bottom: 20px;
         }
+
+        /* Fallback placeholder for images */
+        .placeholder-thumbnail {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e9ecef;
+            color: #6c757d;
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
@@ -105,10 +180,10 @@
         <div class="container">
             <h1 class="display-4 fw-bold">Photo Galleries</h1>
             <c:choose>
-                <c:when test="${userOnly && sessionScope.user.userType == 'PHOTOGRAPHER'}">
+                <c:when test="${param.userOnly && sessionScope.user.userType == 'PHOTOGRAPHER'}">
                     <p class="lead">Manage and organize your photography portfolios</p>
                 </c:when>
-                <c:when test="${userOnly && sessionScope.user.userType == 'CLIENT'}">
+                <c:when test="${param.userOnly && sessionScope.user.userType == 'CLIENT'}">
                     <p class="lead">View your event photography galleries</p>
                 </c:when>
                 <c:otherwise>
@@ -184,13 +259,29 @@
                         <div class="col-md-6 col-lg-4">
                             <div class="card gallery-card">
                                 <div class="position-relative">
-                                    <c:set var="coverPhoto" value="${requestScope['coverPhoto_'.concat(gallery.galleryId)]}" />
+                                    <c:set var="coverPhoto" value="${coverPhotos[gallery.galleryId]}" />
                                     <c:choose>
                                         <c:when test="${not empty coverPhoto}">
-                                            <img src="${pageContext.request.contextPath}/${coverPhoto.thumbnailPath}" class="card-img-top gallery-thumbnail" alt="${gallery.title}">
+                                            <div class="card-img-container">
+                                                <img src="${pageContext.request.contextPath}/${coverPhoto.thumbnailPath}"
+                                                     class="card-img-top gallery-thumbnail"
+                                                     alt="${gallery.title}"
+                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="placeholder-thumbnail" style="display:none;">
+                                                    <div>
+                                                        <i class="bi bi-image fs-1"></i>
+                                                        <div class="mt-2">${gallery.title}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </c:when>
                                         <c:otherwise>
-                                            <img src="${pageContext.request.contextPath}/assets/images/default-gallery.jpg" class="card-img-top gallery-thumbnail" alt="${gallery.title}">
+                                            <div class="placeholder-thumbnail">
+                                                <div>
+                                                    <i class="bi bi-image fs-1"></i>
+                                                    <div class="mt-2">${gallery.title}</div>
+                                                </div>
+                                            </div>
                                         </c:otherwise>
                                     </c:choose>
 
@@ -244,10 +335,10 @@
                             <h3>No Galleries Found</h3>
                             <p class="text-muted mb-4">
                                 <c:choose>
-                                    <c:when test="${userOnly && sessionScope.user.userType == 'PHOTOGRAPHER'}">
+                                    <c:when test="${param.userOnly && sessionScope.user.userType == 'PHOTOGRAPHER'}">
                                         You haven't created any galleries yet. Create your first gallery to showcase your work.
                                     </c:when>
-                                    <c:when test="${userOnly && sessionScope.user.userType == 'CLIENT'}">
+                                    <c:when test="${param.userOnly && sessionScope.user.userType == 'CLIENT'}">
                                         You don't have any galleries shared with you yet.
                                     </c:when>
                                     <c:otherwise>
@@ -265,6 +356,28 @@
                     </div>
                 </c:otherwise>
             </c:choose>
+        </div>
+
+        <%-- Debug Information --%>
+        <div class="alert alert-info">
+            <h5>Debug Information</h5>
+            <p>Total Galleries Loaded: ${galleries.size()}</p>
+            <c:if test="${not empty galleries}">
+                <ul>
+                    <c:forEach var="gallery" items="${galleries}">
+                        <li>
+                            Gallery ID: ${gallery.galleryId}<br>
+                            Title: ${gallery.title}<br>
+                            Status: ${gallery.status}<br>
+                            Category: ${gallery.category}<br>
+                            Cover Photo ID: ${gallery.coverPhotoId}<br>
+                            <c:if test="${not empty coverPhotos[gallery.galleryId]}">
+                                Cover Photo Path: ${coverPhotos[gallery.galleryId].thumbnailPath}
+                            </c:if>
+                        </li>
+                    </c:forEach>
+                </ul>
+            </c:if>
         </div>
     </div>
 
@@ -305,7 +418,7 @@
                 // Show/hide no galleries message
                 const noGalleriesMessage = document.querySelector('.no-galleries-message');
                 if (noGalleriesMessage) {
-                    if (visibleCount === 0) {
+                    if (galleryCards.length > 0 && visibleCount === 0) {
                         noGalleriesMessage.style.display = 'block';
                     } else {
                         noGalleriesMessage.style.display = 'none';
