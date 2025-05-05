@@ -8,6 +8,8 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 import javax.servlet.ServletContext;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.Image;
@@ -15,6 +17,7 @@ import java.awt.Graphics2D;
 import java.awt.AlphaComposite;
 import java.awt.RenderingHints;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Manages photo-related operations for the Event Photography System
@@ -125,21 +128,45 @@ public class PhotoManager {
         // Basic validation
         if (photo == null || photo.getGalleryId() == null || photo.getPhotographerId() == null ||
                 fileData == null || fileData.length == 0) {
+            LOGGER.severe("Invalid photo data or empty file data");
             return false;
         }
 
         try {
+            // Ensure directories exist
+            FileHandler.createDirectory(PHOTOS_DIRECTORY);
+            FileHandler.createDirectory(THUMBNAILS_DIRECTORY);
+            LOGGER.info("Directories created/verified: " + PHOTOS_DIRECTORY + ", " + THUMBNAILS_DIRECTORY);
+
             // Generate file paths
             String extension = getFileExtension(photo.getOriginalFileName());
             String fileName = photo.getPhotoId() + "." + extension;
             String filePath = PHOTOS_DIRECTORY + File.separator + fileName;
             String thumbnailPath = THUMBNAILS_DIRECTORY + File.separator + fileName;
 
-            // Save original file using the writeBinaryFile method
-            writeBinaryFile(filePath, fileData);
+            LOGGER.info("Saving photo to: " + filePath);
+            LOGGER.info("Thumbnail path: " + thumbnailPath);
+
+            // Create parent directories if they don't exist
+            File photoFile = new File(filePath);
+            if (photoFile.getParentFile() != null) {
+                photoFile.getParentFile().mkdirs();
+            }
+
+            File thumbnailFile = new File(thumbnailPath);
+            if (thumbnailFile.getParentFile() != null) {
+                thumbnailFile.getParentFile().mkdirs();
+            }
+
+            // Save original file directly
+            try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                fos.write(fileData);
+                LOGGER.info("Wrote " + fileData.length + " bytes to " + filePath);
+            }
 
             // Generate and save thumbnail
             createThumbnail(fileData, thumbnailPath);
+            LOGGER.info("Thumbnail created at: " + thumbnailPath);
 
             // Set file paths
             photo.setFileName(fileName);
@@ -147,10 +174,18 @@ public class PhotoManager {
             photo.setThumbnailPath(thumbnailPath);
 
             // Extract image dimensions
-            BufferedImage bufferedImage = ImageIO.read(new java.io.ByteArrayInputStream(fileData));
-            if (bufferedImage != null) {
-                photo.setWidth(bufferedImage.getWidth());
-                photo.setHeight(bufferedImage.getHeight());
+            try {
+                BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(fileData));
+                if (bufferedImage != null) {
+                    photo.setWidth(bufferedImage.getWidth());
+                    photo.setHeight(bufferedImage.getHeight());
+                    LOGGER.info("Image dimensions: " + bufferedImage.getWidth() + "x" + bufferedImage.getHeight());
+                } else {
+                    LOGGER.warning("Could not read image dimensions");
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Error reading image dimensions: " + e.getMessage(), e);
+                // Continue processing even if we can't read dimensions
             }
 
             // Set file size
@@ -158,7 +193,9 @@ public class PhotoManager {
 
             // Add to list and save
             photos.add(photo);
-            return savePhotos();
+            boolean saved = savePhotos();
+            LOGGER.info("Photo metadata " + (saved ? "saved" : "failed to save"));
+            return saved;
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error creating photo: " + e.getMessage(), e);
@@ -182,7 +219,7 @@ public class PhotoManager {
             }
 
             // Write binary data
-            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+            try (FileOutputStream fos = new FileOutputStream(file)) {
                 fos.write(data);
             }
 
@@ -200,7 +237,7 @@ public class PhotoManager {
      * @throws IOException If there's an error processing the image
      */
     private void createThumbnail(byte[] fileData, String thumbnailPath) throws IOException {
-        BufferedImage originalImage = ImageIO.read(new java.io.ByteArrayInputStream(fileData));
+        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(fileData));
         if (originalImage == null) {
             throw new IOException("Could not read image data");
         }

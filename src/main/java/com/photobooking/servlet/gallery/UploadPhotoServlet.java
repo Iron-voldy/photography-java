@@ -1,8 +1,8 @@
-// UploadPhotoServlet.java
 package com.photobooking.servlet.gallery;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -21,6 +21,7 @@ import com.photobooking.model.gallery.GalleryManager;
 import com.photobooking.model.gallery.Photo;
 import com.photobooking.model.gallery.PhotoManager;
 import com.photobooking.model.user.User;
+import com.photobooking.util.FileHandler;
 import com.photobooking.util.ValidationUtil;
 
 /**
@@ -58,9 +59,14 @@ public class UploadPhotoServlet extends HttpServlet {
         String galleryId = request.getParameter("galleryId");
         String galleryType = request.getParameter("galleryType");
 
+        // Make sure the data directories exist
+        LOGGER.info("Creating necessary directories for photo uploads");
+        FileHandler.createDirectory("photos");
+        FileHandler.createDirectory("thumbnails");
+
         // Validate gallery ID for existing gallery
         if ("existing".equals(galleryType) && (galleryId == null || galleryId.trim().isEmpty())) {
-            session.setAttribute("errorMessage", "Gallery ID is required");
+            session.setAttribute("errorMessage", "Gallery ID is required when selecting an existing gallery");
             response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
             return;
         }
@@ -69,13 +75,24 @@ public class UploadPhotoServlet extends HttpServlet {
             GalleryManager galleryManager = new GalleryManager(getServletContext());
             PhotoManager photoManager = new PhotoManager(getServletContext());
 
+            // Ensure we have a consistent photographerId - use what's in session
+            String photographerId = (String) session.getAttribute("photographerId");
+            if (photographerId == null) {
+                // Fall back to userId if no photographerId in session
+                photographerId = currentUser.getUserId();
+                session.setAttribute("photographerId", photographerId);
+                LOGGER.info("Setting photographerId in session to userId: " + photographerId);
+            }
+            LOGGER.info("Using photographerId: " + photographerId + " for uploads");
+
             // Create a new gallery if requested
             if ("new".equals(galleryType)) {
                 String galleryTitle = ValidationUtil.cleanInput(request.getParameter("galleryTitle"));
                 String galleryDescription = ValidationUtil.cleanInput(request.getParameter("galleryDescription"));
                 String galleryCategory = request.getParameter("galleryCategory");
                 String galleryBooking = request.getParameter("galleryBooking");
-                boolean galleryPublic = "on".equals(request.getParameter("galleryPublic"));
+                String galleryPublicStr = request.getParameter("galleryPublic");
+                boolean galleryPublic = "on".equals(galleryPublicStr) || "true".equals(galleryPublicStr);
 
                 if (ValidationUtil.isNullOrEmpty(galleryTitle)) {
                     session.setAttribute("errorMessage", "Gallery title is required");
@@ -87,7 +104,11 @@ public class UploadPhotoServlet extends HttpServlet {
                 newGallery.setTitle(galleryTitle);
                 newGallery.setDescription(galleryDescription);
                 newGallery.setCategory(galleryCategory);
-                newGallery.setPhotographerId(currentUser.getUserId());
+                newGallery.setPhotographerId(photographerId); // Use consistent photographerId
+
+                LOGGER.info("Creating new gallery with title: " + galleryTitle +
+                        ", category: " + galleryCategory +
+                        ", photographerId: " + photographerId);
 
                 if (!ValidationUtil.isNullOrEmpty(galleryBooking)) {
                     newGallery.setBookingId(galleryBooking);
@@ -104,6 +125,7 @@ public class UploadPhotoServlet extends HttpServlet {
                 }
 
                 galleryId = newGallery.getGalleryId();
+                LOGGER.info("New gallery created with ID: " + galleryId);
             } else {
                 // Verify gallery exists and belongs to the photographer
                 Gallery gallery = galleryManager.getGalleryById(galleryId);
@@ -114,7 +136,8 @@ public class UploadPhotoServlet extends HttpServlet {
                     return;
                 }
 
-                if (!gallery.getPhotographerId().equals(currentUser.getUserId())) {
+                if (!gallery.getPhotographerId().equals(photographerId) &&
+                        !gallery.getPhotographerId().equals(currentUser.getUserId())) {
                     session.setAttribute("errorMessage", "You don't have permission to upload photos to this gallery");
                     response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
                     return;
@@ -126,6 +149,7 @@ public class UploadPhotoServlet extends HttpServlet {
             for (Part part : request.getParts()) {
                 if (part.getName().equals("photos") && part.getSize() > 0) {
                     fileParts.add(part);
+                    LOGGER.info("Found photo part: " + getFileName(part) + ", size: " + part.getSize());
                 }
             }
 
@@ -136,7 +160,8 @@ public class UploadPhotoServlet extends HttpServlet {
             }
 
             // Auto-optimize images if requested
-            boolean autoProcess = "on".equals(request.getParameter("autoProcess"));
+            boolean autoProcess = "on".equals(request.getParameter("autoProcess")) ||
+                    "true".equals(request.getParameter("autoProcess"));
 
             // Upload each photo
             int successCount = 0;
@@ -146,10 +171,12 @@ public class UploadPhotoServlet extends HttpServlet {
                     continue;
                 }
 
+                LOGGER.info("Processing upload: " + originalFileName);
+
                 // Create photo object
                 Photo photo = new Photo();
                 photo.setGalleryId(galleryId);
-                photo.setPhotographerId(currentUser.getUserId());
+                photo.setPhotographerId(photographerId);
                 photo.setOriginalFileName(originalFileName);
                 photo.setContentType(filePart.getContentType());
 
@@ -158,6 +185,7 @@ public class UploadPhotoServlet extends HttpServlet {
                 try (InputStream inputStream = filePart.getInputStream()) {
                     fileData = new byte[(int) filePart.getSize()];
                     inputStream.read(fileData);
+                    LOGGER.info("Read " + fileData.length + " bytes for " + originalFileName);
                 }
 
                 // Upload photo
@@ -165,14 +193,29 @@ public class UploadPhotoServlet extends HttpServlet {
 
                 if (uploaded) {
                     // Add to gallery
-                    galleryManager.addPhotoToGallery(galleryId, photo.getPhotoId());
-                    successCount++;
+                    boolean addedToGallery = galleryManager.addPhotoToGallery(galleryId, photo.getPhotoId());
+                    LOGGER.info("Photo " + photo.getPhotoId() + " uploaded and " +
+                            (addedToGallery ? "added to gallery" : "FAILED to add to gallery"));
+
+                    if (addedToGallery) {
+                        successCount++;
+                    }
+                } else {
+                    LOGGER.warning("Failed to upload photo: " + originalFileName);
                 }
             }
 
             // Set success message and redirect
             if (successCount > 0) {
                 session.setAttribute("successMessage", successCount + " photo(s) uploaded successfully");
+
+                // Update gallery's last updated date
+                Gallery gallery = galleryManager.getGalleryById(galleryId);
+                if (gallery != null) {
+                    gallery.setLastUpdatedDate(LocalDateTime.now());
+                    galleryManager.updateGallery(gallery);
+                }
+
                 response.sendRedirect(request.getContextPath() + "/gallery/details?id=" + galleryId);
             } else {
                 session.setAttribute("errorMessage", "Failed to upload photos");
@@ -181,7 +224,7 @@ public class UploadPhotoServlet extends HttpServlet {
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error uploading photos: " + e.getMessage(), e);
-            session.setAttribute("errorMessage", "An error occurred: " + e.getMessage());
+            session.setAttribute("errorMessage", "An error occurred during upload: " + e.getMessage());
             response.sendRedirect(request.getContextPath() + "/gallery/upload_photos.jsp");
         }
     }

@@ -1,4 +1,3 @@
-// GalleryListServlet.java
 package com.photobooking.servlet.gallery;
 
 import java.io.IOException;
@@ -16,6 +15,8 @@ import com.photobooking.model.gallery.GalleryManager;
 import com.photobooking.model.gallery.PhotoManager;
 import com.photobooking.model.gallery.Photo;
 import com.photobooking.model.user.User;
+import com.photobooking.model.photographer.Photographer;
+import com.photobooking.model.photographer.PhotographerManager;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -52,9 +53,60 @@ public class GalleryListServlet extends HttpServlet {
             // Filter galleries based on request and user type
             if (userOnly && currentUser != null) {
                 if (currentUser.getUserType() == User.UserType.PHOTOGRAPHER) {
-                    // Photographer's own galleries
-                    galleries = galleryManager.getGalleriesByPhotographer(currentUser.getUserId());
-                    LOGGER.info("Fetching photographer galleries for user: " + currentUser.getUserId() + ", found: " + galleries.size());
+                    // First check if userId has galleries directly
+                    List<Gallery> galleriesByUserId = galleryManager.getGalleriesByPhotographer(currentUser.getUserId());
+
+                    if (galleriesByUserId != null && !galleriesByUserId.isEmpty()) {
+                        // User has galleries with their userId, so use that
+                        galleries = galleriesByUserId;
+                        // Update the photographerId in session to be the userId for consistency
+                        session.setAttribute("photographerId", currentUser.getUserId());
+                        LOGGER.info("Found galleries using userId: " + currentUser.getUserId() +
+                                ", count: " + galleries.size() + ", updated session");
+                    } else {
+                        // Try with photographerId from session or manager
+                        String photographerId = (String) session.getAttribute("photographerId");
+
+                        if (photographerId == null) {
+                            // If not in session, try to get from PhotographerManager
+                            PhotographerManager photographerManager = new PhotographerManager(getServletContext());
+                            Photographer photographer = photographerManager.getPhotographerByUserId(currentUser.getUserId());
+
+                            if (photographer != null) {
+                                photographerId = photographer.getPhotographerId();
+                                // Store in session for future use
+                                session.setAttribute("photographerId", photographerId);
+                                LOGGER.info("Set photographerId in session: " + photographerId);
+                            } else {
+                                // Use userId directly
+                                photographerId = currentUser.getUserId();
+                                session.setAttribute("photographerId", photographerId);
+                                LOGGER.info("Using userId as photographerId: " + photographerId);
+                            }
+                        }
+
+                        // Get galleries with the determined photographerId
+                        galleries = galleryManager.getGalleriesByPhotographer(photographerId);
+                        LOGGER.info("Fetching photographer galleries with ID: " + photographerId +
+                                ", found: " + galleries.size());
+
+                        // If still no galleries found, try one last time with userId
+                        if (galleries.isEmpty() && !photographerId.equals(currentUser.getUserId())) {
+                            galleries = galleryManager.getGalleriesByPhotographer(currentUser.getUserId());
+                            if (!galleries.isEmpty()) {
+                                // Update photographerId in session to userId since that's where galleries are found
+                                session.setAttribute("photographerId", currentUser.getUserId());
+                                LOGGER.info("Falling back to userId, found " + galleries.size() + " galleries");
+                            }
+                        }
+                    }
+
+                    // Log gallery IDs for debugging
+                    for (Gallery gallery : galleries) {
+                        LOGGER.info("Gallery found: ID=" + gallery.getGalleryId() +
+                                ", Title=" + gallery.getTitle() +
+                                ", PhotographerId=" + gallery.getPhotographerId());
+                    }
                 } else if (currentUser.getUserType() == User.UserType.CLIENT) {
                     // Galleries shared with this client
                     galleries = galleryManager.getGalleriesByClient(currentUser.getUserId());
@@ -92,11 +144,6 @@ public class GalleryListServlet extends HttpServlet {
                     galleries = filteredGalleries;
                     LOGGER.info("Fetching all public galleries, found: " + galleries.size());
                 }
-            }
-
-            // Log gallery IDs for debugging
-            for (Gallery gallery : galleries) {
-                LOGGER.info("Gallery found: ID=" + gallery.getGalleryId() + ", Title=" + gallery.getTitle());
             }
 
             // Get cover photos for each gallery
