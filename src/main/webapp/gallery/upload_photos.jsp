@@ -2,6 +2,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,7 +37,7 @@
             border-radius: 0 0 20px 20px;
         }
 
-.upload-container {
+        .upload-container {
             background-color: white;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
@@ -148,18 +149,24 @@
                                 <div class="mb-3">
                                     <label class="gallery-option" id="existingGalleryOption">
                                         <div class="d-flex align-items-center">
-                                            <input type="radio" name="galleryType" value="existing" class="form-check-input me-2" checked>
+                                            <input type="radio" name="galleryType" value="existing" class="form-check-input me-2"
+                                                ${empty param.galleryId ? 'checked' : 'checked'}>
                                             <h6 class="mb-0">Add to Existing Gallery</h6>
                                         </div>
                                     </label>
 
                                     <div id="existingGalleryContainer" class="ps-4">
                                         <div class="mb-3">
+                                            <!-- Update the gallery selection dropdown in upload_photos.jsp -->
                                             <select class="form-select" id="galleryId" name="galleryId">
                                                 <option value="">Select Gallery</option>
                                                 <c:forEach var="gallery" items="${galleries}">
                                                     <option value="${gallery.galleryId}" ${param.galleryId == gallery.galleryId ? 'selected' : ''}>
                                                         ${gallery.title}
+                                                        <c:if test="${not empty gallery.createdDate}">
+                                                            <% pageContext.setAttribute("dateFormat", java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")); %>
+                                                            - ${gallery.createdDate.format(dateFormat)}
+                                                        </c:if>
                                                     </option>
                                                 </c:forEach>
                                             </select>
@@ -171,12 +178,13 @@
                                 <div>
                                     <label class="gallery-option" id="newGalleryOption">
                                         <div class="d-flex align-items-center">
-                                            <input type="radio" name="galleryType" value="new" class="form-check-input me-2">
+                                            <input type="radio" name="galleryType" value="new" class="form-check-input me-2"
+                                                ${empty galleries ? 'checked' : ''}>
                                             <h6 class="mb-0">Create New Gallery</h6>
                                         </div>
                                     </label>
 
-                                    <div id="newGalleryContainer" class="ps-4" style="display: none;">
+                                    <div id="newGalleryContainer" class="ps-4" style="display: ${empty galleries ? 'block' : 'none'};">
                                         <div class="mb-3">
                                             <label for="galleryTitle" class="form-label">Gallery Title</label>
                                             <input type="text" class="form-control" id="galleryTitle" name="galleryTitle" placeholder="Enter gallery title">
@@ -207,7 +215,9 @@
                                                 <option value="">None</option>
                                                 <c:forEach var="booking" items="${bookings}">
                                                     <option value="${booking.bookingId}">
-                                                        ${booking.eventType} - <fmt:formatDate value="${booking.eventDateTime}" pattern="MMM dd, yyyy"/>
+                                                        ${booking.eventType} -
+                                                        <% pageContext.setAttribute("eventDateFormat", java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")); %>
+                                                        ${booking.eventDateTime.format(eventDateFormat)}
                                                     </option>
                                                 </c:forEach>
                                             </select>
@@ -318,7 +328,8 @@
                                             <h6 class="card-title mb-1">${gallery.title}</h6>
                                             <p class="small text-muted mb-0">
                                                 ${gallery.photoIds.size()} photos •
-                                                <fmt:formatDate value="${gallery.createdDate}" pattern="MMM d, yyyy"/>
+                                                <% pageContext.setAttribute("galleryDateFormat", java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy")); %>
+                                                ${gallery.createdDate.format(galleryDateFormat)}
                                             </p>
                                         </div>
                                     </div>
@@ -359,6 +370,20 @@
             const existingGalleryContainer = document.getElementById('existingGalleryContainer');
             const newGalleryContainer = document.getElementById('newGalleryContainer');
 
+            // Check if there are galleries available
+            const galleriesAvailable = ${not empty galleries};
+
+            // If no galleries available, select the "Create New Gallery" option by default
+            if (!galleriesAvailable) {
+                newGalleryRadio.checked = true;
+                newGalleryOption.classList.add('selected');
+                newGalleryContainer.style.display = 'block';
+                existingGalleryContainer.style.display = 'none';
+            } else {
+                existingGalleryRadio.checked = true;
+                existingGalleryOption.classList.add('selected');
+            }
+
             // Click event for existing gallery option
             existingGalleryOption.addEventListener('click', function() {
                 existingGalleryRadio.checked = true;
@@ -376,15 +401,6 @@
                 newGalleryContainer.style.display = 'block';
                 existingGalleryContainer.style.display = 'none';
             });
-
-            // Initialize selected option
-            if (existingGalleryRadio.checked) {
-                existingGalleryOption.classList.add('selected');
-            } else if (newGalleryRadio.checked) {
-                newGalleryOption.classList.add('selected');
-                newGalleryContainer.style.display = 'block';
-                existingGalleryContainer.style.display = 'none';
-            }
 
             // Initialize Dropzone
             const myDropzone = new Dropzone("#dropzoneUpload", {

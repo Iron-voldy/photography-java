@@ -46,14 +46,19 @@ public class GalleryListServlet extends HttpServlet {
             PhotoManager photoManager = new PhotoManager(getServletContext());
             List<Gallery> galleries = new ArrayList<>();
 
+            // Debug log to see what's happening
+            LOGGER.info("GalleryListServlet: Fetching galleries. userOnly=" + userOnly);
+
             // Filter galleries based on request and user type
             if (userOnly && currentUser != null) {
                 if (currentUser.getUserType() == User.UserType.PHOTOGRAPHER) {
                     // Photographer's own galleries
                     galleries = galleryManager.getGalleriesByPhotographer(currentUser.getUserId());
+                    LOGGER.info("Fetching photographer galleries for user: " + currentUser.getUserId() + ", found: " + galleries.size());
                 } else if (currentUser.getUserType() == User.UserType.CLIENT) {
                     // Galleries shared with this client
                     galleries = galleryManager.getGalleriesByClient(currentUser.getUserId());
+                    LOGGER.info("Fetching client galleries for user: " + currentUser.getUserId() + ", found: " + galleries.size());
                 }
             } else {
                 // Public galleries - for everyone
@@ -62,15 +67,36 @@ public class GalleryListServlet extends HttpServlet {
 
                 if (category != null && !category.trim().isEmpty()) {
                     galleries = galleryManager.getGalleriesByCategory(category);
+                    LOGGER.info("Fetching galleries by category: " + category + ", found: " + galleries.size());
                 } else if (search != null && !search.trim().isEmpty()) {
                     galleries = galleryManager.searchGalleries(search);
                     // Filter only published galleries for public view
-                    galleries.removeIf(g -> g.getStatus() != Gallery.GalleryStatus.PUBLISHED);
+                    List<Gallery> filteredGalleries = new ArrayList<>();
+                    for (Gallery gallery : galleries) {
+                        if (gallery.getStatus() == Gallery.GalleryStatus.PUBLISHED) {
+                            filteredGalleries.add(gallery);
+                        }
+                    }
+                    galleries = filteredGalleries;
+                    LOGGER.info("Fetching galleries by search: " + search + ", found: " + galleries.size());
                 } else {
                     // All public galleries
                     galleries = galleryManager.searchGalleries("");
-                    galleries.removeIf(g -> g.getStatus() != Gallery.GalleryStatus.PUBLISHED);
+                    // Filter only published galleries
+                    List<Gallery> filteredGalleries = new ArrayList<>();
+                    for (Gallery gallery : galleries) {
+                        if (gallery.getStatus() == Gallery.GalleryStatus.PUBLISHED) {
+                            filteredGalleries.add(gallery);
+                        }
+                    }
+                    galleries = filteredGalleries;
+                    LOGGER.info("Fetching all public galleries, found: " + galleries.size());
                 }
+            }
+
+            // Log gallery IDs for debugging
+            for (Gallery gallery : galleries) {
+                LOGGER.info("Gallery found: ID=" + gallery.getGalleryId() + ", Title=" + gallery.getTitle());
             }
 
             // Get cover photos for each gallery

@@ -136,12 +136,25 @@ public class GalleryManager {
      * @param photographerId The photographer ID
      * @return List of galleries for the photographer
      */
+    // Update to GalleryManager.java - getGalleriesByPhotographer method
     public List<Gallery> getGalleriesByPhotographer(String photographerId) {
-        if (photographerId == null) return new ArrayList<>();
+        if (photographerId == null) {
+            LOGGER.warning("Attempting to get galleries with null photographerId");
+            return new ArrayList<>();
+        }
 
-        return galleries.stream()
-                .filter(g -> g.getPhotographerId().equals(photographerId))
-                .collect(Collectors.toList());
+        LOGGER.info("Getting galleries for photographer ID: " + photographerId);
+        List<Gallery> result = new ArrayList<>();
+
+        for (Gallery gallery : galleries) {
+            if (gallery.getPhotographerId() != null && gallery.getPhotographerId().equals(photographerId)) {
+                result.add(gallery);
+                LOGGER.info("Found gallery: " + gallery.getGalleryId() + " - " + gallery.getTitle());
+            }
+        }
+
+        LOGGER.info("Found " + result.size() + " galleries for photographer: " + photographerId);
+        return result;
     }
 
     /**

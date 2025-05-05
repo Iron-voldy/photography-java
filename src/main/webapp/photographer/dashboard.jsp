@@ -184,7 +184,7 @@
                             <i class="bi bi-images me-2"></i>Browse Galleries
                         </a>
                         <c:if test="${sessionScope.user.userType == 'PHOTOGRAPHER'}">
-                            <a href="${pageContext.request.contextPath}/gallery/upload_photos.jsp" class="btn btn-outline-primary">
+                            <a href="${pageContext.request.contextPath}/gallery/upload-form" class="btn btn-outline-primary">
                                 <i class="bi bi-cloud-upload me-2"></i>Upload Photos
                             </a>
                             <a href="${pageContext.request.contextPath}/photographer/service_management.jsp" class="btn btn-outline-primary">
