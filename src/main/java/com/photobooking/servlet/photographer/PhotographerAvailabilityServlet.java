@@ -48,8 +48,9 @@ public class PhotographerAvailabilityServlet extends HttpServlet {
 
         String photographerId = currentUser.getUserId();
 
-        // Get upcoming bookings for calendar
-        BookingManager bookingManager = new BookingManager();
+        // Get all bookings (both upcoming and past) for the photographer
+        BookingManager bookingManager = new BookingManager(getServletContext());
+        List<Booking> allBookings = bookingManager.getBookingsByPhotographer(photographerId);
         List<Booking> upcomingBookings = bookingManager.getUpcomingBookings(photographerId, true);
 
         // Get unavailable dates for photographer
@@ -61,13 +62,24 @@ public class PhotographerAvailabilityServlet extends HttpServlet {
         JsonArray calendarEvents = new JsonArray();
 
         // Add booked events
-        for (Booking booking : upcomingBookings) {
+        for (Booking booking : allBookings) {
             JsonObject event = new JsonObject();
             event.addProperty("id", "booking-" + booking.getBookingId());
             event.addProperty("title", getBookingTypeDisplayName(booking.getEventType()));
             event.addProperty("start", booking.getEventDateTime().toString());
-            event.addProperty("backgroundColor", getBookingStatusColor(booking.getStatus()));
-            event.addProperty("borderColor", getBookingStatusColor(booking.getStatus()));
+
+            // Calculate end time (assume 3 hours for simplicity, adjust as needed)
+            LocalDateTime endTime = booking.getEventDateTime().plusHours(3);
+            event.addProperty("end", endTime.toString());
+
+            // Set color based on booking status
+            String backgroundColor = getBookingStatusColor(booking.getStatus());
+            event.addProperty("backgroundColor", backgroundColor);
+            event.addProperty("borderColor", backgroundColor);
+
+            // Add more details
+            event.addProperty("description", "Location: " + booking.getEventLocation());
+            event.addProperty("status", booking.getStatus().toString());
 
             calendarEvents.add(event);
         }
@@ -77,10 +89,23 @@ public class PhotographerAvailabilityServlet extends HttpServlet {
             JsonObject event = new JsonObject();
             event.addProperty("id", "unavailable-" + date.getId());
             event.addProperty("title", date.getReason() != null ? date.getReason() : "Unavailable");
-            event.addProperty("start", date.getDate().toString());
-            event.addProperty("backgroundColor", "#dc3545");  // Red color for unavailable dates
+
+            // Format as full day event if allDay is true
+            if (date.isAllDay()) {
+                event.addProperty("start", date.getDate().toString());
+                event.addProperty("allDay", true);
+            } else {
+                // Format as time slot if not all day
+                String startDateTime = date.getDate().toString() + "T" + date.getStartTime() + ":00";
+                String endDateTime = date.getDate().toString() + "T" + date.getEndTime() + ":00";
+                event.addProperty("start", startDateTime);
+                event.addProperty("end", endDateTime);
+                event.addProperty("allDay", false);
+            }
+
+            // Red color for unavailable dates
+            event.addProperty("backgroundColor", "#dc3545");
             event.addProperty("borderColor", "#dc3545");
-            event.addProperty("allDay", true);
 
             calendarEvents.add(event);
         }
@@ -89,6 +114,9 @@ public class PhotographerAvailabilityServlet extends HttpServlet {
         request.setAttribute("upcomingBookings", upcomingBookings);
         request.setAttribute("unavailableDates", unavailableDates);
         request.setAttribute("calendarEventsJson", gson.toJson(calendarEvents));
+
+        // Debug log
+        System.out.println("Calendar events prepared: " + calendarEvents.size() + " events");
 
         request.getRequestDispatcher("/photographer/availability_calendar.jsp").forward(request, response);
     }

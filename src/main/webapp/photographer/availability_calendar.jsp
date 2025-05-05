@@ -6,8 +6,8 @@
 <%@ page import="com.photobooking.model.photographer.UnavailableDate" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
-<%@ page import="com.google.gson.Gson" %>
-<%@ page import="com.google.gson.JsonArray" %>
+<%@ page import="java.time.LocalDateTime" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
 
 <%
     // Ensure user is logged in and is a photographer
@@ -50,10 +50,13 @@
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
 
     <style>
-        body { background-color: #f4f6f9; }
-        .calendar-container { 
-            background-color: white; 
-            border-radius: 10px; 
+        body {
+            background-color: #f4f6f9;
+            padding-bottom: 50px;
+        }
+        .calendar-container {
+            background-color: white;
+            border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             padding: 20px;
         }
@@ -66,9 +69,40 @@
             transition: background-color 0.3s;
         }
         .time-slot:hover { background-color: #f8f9fa; }
-        .time-slot.selected { 
-            background-color: #dc3545; 
-            color: white; 
+        .time-slot.selected {
+            background-color: #dc3545;
+            color: white;
+        }
+        .calendar-legend {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .fc-event {
+            cursor: pointer;
+        }
+        .fc-daygrid-event {
+            white-space: normal !important;
+        }
+        .calendar-header {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-radius: 0 0 10px 10px;
         }
     </style>
 </head>
@@ -76,7 +110,18 @@
     <!-- Include Header -->
     <jsp:include page="/includes/header.jsp" />
 
-    <div class="container-fluid mt-4">
+    <!-- Calendar Header -->
+    <div class="calendar-header">
+        <div class="container">
+            <h1 class="display-5">Availability Calendar</h1>
+            <p class="lead">Manage your availability and view your bookings</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Include Messages -->
+        <jsp:include page="/includes/messages.jsp" />
+
         <div class="row">
             <div class="col-lg-8 offset-lg-2">
                 <div class="card">
@@ -93,12 +138,39 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-lg-8">
+                            <div class="col-lg-9">
                                 <div class="calendar-container">
                                     <div id="calendar"></div>
+
+                                    <!-- Calendar Legend -->
+                                    <div class="calendar-legend">
+                                        <h6 class="mb-3">Calendar Legend</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="legend-item">
+                                                    <div class="legend-color" style="background-color: #28a745;"></div>
+                                                    <span>Confirmed Booking</span>
+                                                </div>
+                                                <div class="legend-item">
+                                                    <div class="legend-color" style="background-color: #ffc107;"></div>
+                                                    <span>Pending Booking</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="legend-item">
+                                                    <div class="legend-color" style="background-color: #dc3545;"></div>
+                                                    <span>Unavailable/Blocked</span>
+                                                </div>
+                                                <div class="legend-item">
+                                                    <div class="legend-color" style="background-color: #007bff;"></div>
+                                                    <span>Completed Booking</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-lg-4">
+                            <div class="col-lg-3">
                                 <div id="timeSlots" style="display:none;">
                                     <h5 id="selectedDateTitle" class="mb-3">Select a Date</h5>
                                     <div class="time-slots-container">
@@ -123,6 +195,63 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Upcoming Bookings Card -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Upcoming Bookings</h3>
+                        <a href="${pageContext.request.contextPath}/booking/booking_list.jsp" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <c:choose>
+                            <c:when test="${not empty upcomingBookings}">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Event Type</th>
+                                                <th>Date & Time</th>
+                                                <th>Location</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <c:forEach var="booking" items="${upcomingBookings}">
+                                                <tr>
+                                                    <td>${booking.eventType}</td>
+                                                    <td>${booking.eventDateTime}</td>
+                                                    <td>${booking.eventLocation}</td>
+                                                    <td>
+                                                        <c:choose>
+                                                            <c:when test="${booking.status == 'CONFIRMED'}">
+                                                                <span class="badge bg-success">CONFIRMED</span>
+                                                            </c:when>
+                                                            <c:when test="${booking.status == 'PENDING'}">
+                                                                <span class="badge bg-warning">PENDING</span>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <span class="badge bg-secondary">${booking.status}</span>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </td>
+                                                    <td>
+                                                        <a href="${pageContext.request.contextPath}/booking/booking_details.jsp?id=${booking.bookingId}" class="btn btn-sm btn-outline-primary">Details</a>
+                                                    </td>
+                                                </tr>
+                                            </c:forEach>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </c:when>
+                            <c:otherwise>
+                                <div class="alert alert-info mb-0">
+                                    You have no upcoming bookings.
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -142,9 +271,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body d-flex justify-content-between align-items-center">
                                         <div>
-                                            <h6 class="card-title mb-1">
-                                                <fmt:formatDate value="${unavailableDate.date}" pattern="MMM dd, yyyy" />
-                                            </h6>
+                                            <h6 class="card-title mb-1">${unavailableDate.date}</h6>
                                             <p class="text-muted mb-0">
                                                 <c:choose>
                                                     <c:when test="${unavailableDate.allDay}">
@@ -159,7 +286,7 @@
                                                 </c:if>
                                             </p>
                                         </div>
-                                        <button class="btn btn-sm btn-outline-danger remove-blocked-date" 
+                                        <button class="btn btn-sm btn-outline-danger remove-blocked-date"
                                                 data-date-id="${unavailableDate.id}">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -174,6 +301,9 @@
                             </div>
                         </c:otherwise>
                     </c:choose>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -215,6 +345,25 @@
         </div>
     </div>
 
+    <!-- Event Details Modal -->
+    <div class="modal fade" id="eventDetailsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eventDetailsTitle">Event Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="eventDetailsBody">
+                    <!-- Event details will be inserted here dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="#" class="btn btn-primary" id="eventDetailsLink">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- FullCalendar JS -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
 
@@ -234,11 +383,29 @@
                 selectable: true,
                 events: <%= calendarEventsJson %>,
                 eventClick: function(info) {
-                    // Optional: Handle event clicks if needed
-                    console.log('Event clicked:', info.event);
+                    // Handle event clicks to show details
+                    const event = info.event;
+                    console.log('Event clicked:', event);
+
+                    // Get event ID to determine if it's a booking or unavailable date
+                    const eventId = event.id;
+
+                    if (eventId && eventId.startsWith('booking-')) {
+                        // It's a booking event
+                        const bookingId = eventId.replace('booking-', '');
+                        showEventDetails(event, bookingId);
+                    } else {
+                        // It's an unavailable date, just show basic info
+                        showUnavailableDateDetails(event);
+                    }
                 },
                 dateClick: function(info) {
                     selectDate(info.dateStr);
+                },
+                eventTimeFormat: {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    meridiem: 'short'
                 }
             });
             calendar.render();
@@ -247,33 +414,187 @@
             function selectDate(dateStr) {
                 const timeSlots = document.getElementById('timeSlots');
                 const selectedDateTitle = document.getElementById('selectedDateTitle');
-                
-                selectedDateTitle.textContent = new Date(dateStr).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+
+                selectedDateTitle.textContent = new Date(dateStr).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 });
-                
+
                 timeSlots.style.display = 'block';
-                
+
                 // Reset time slots
                 document.querySelectorAll('.time-slot').forEach(slot => {
                     slot.classList.remove('selected');
+                    slot.style.pointerEvents = '';
                 });
+
+                // Check if this date has any bookings or blocked periods
+                const events = calendar.getEvents();
+                for (let event of events) {
+                    // Check if the event is on the selected date
+                    const eventStart = new Date(event.start);
+                    const selectedDate = new Date(dateStr);
+
+                    if (eventStart.toDateString() === selectedDate.toDateString()) {
+                        // If it's an all-day event or unavailable date, disable all time slots
+                        if (event.allDay && event.id.startsWith('unavailable-')) {
+                            document.querySelectorAll('.time-slot').forEach(slot => {
+                                slot.classList.add('selected');
+                                slot.style.pointerEvents = 'none';
+                            });
+                            // Add message
+                            selectedDateTitle.textContent += " (Fully Blocked)";
+                            break;
+                        }
+                        // If it's a booking that takes specific time slots
+                        else if (!event.allDay) {
+                            // Get the event time and mark those slots as unavailable
+                            const eventHour = eventStart.getHours();
+                            const eventSlot = document.querySelector(`.time-slot[data-time="${eventHour.toString().padStart(2, '0')}:00"]`);
+                            if (eventSlot) {
+                                eventSlot.classList.add('selected');
+                                eventSlot.style.pointerEvents = 'none';
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Show event details in modal
+            function showEventDetails(event, bookingId) {
+                const title = document.getElementById('eventDetailsTitle');
+                const body = document.getElementById('eventDetailsBody');
+                const link = document.getElementById('eventDetailsLink');
+
+                // Set modal title
+                title.textContent = event.title;
+
+                // Format event details
+                const startDate = new Date(event.start);
+                const formattedDate = startDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const formattedTime = startDate.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                // Create event details content
+                let detailsHtml = `
+                    <p><strong>Date:</strong> ${formattedDate}</p>
+                    <p><strong>Time:</strong> ${formattedTime}</p>
+                `;
+
+                // Add more details if available in the event's extendedProps
+                if (event.extendedProps) {
+                    if (event.extendedProps.description) {
+                        detailsHtml += `<p><strong>Details:</strong> ${event.extendedProps.description}</p>`;
+                    }
+                    if (event.extendedProps.status) {
+                        let statusClass = '';
+                        switch(event.extendedProps.status) {
+                            case 'CONFIRMED': statusClass = 'success'; break;
+                            case 'PENDING': statusClass = 'warning'; break;
+                            case 'CANCELLED': statusClass = 'danger'; break;
+                            case 'COMPLETED': statusClass = 'primary'; break;
+                            default: statusClass = 'secondary';
+                        }
+
+                        detailsHtml += `
+                            <p>
+                                <strong>Status:</strong>
+                                <span class="badge bg-${statusClass}">
+                                    ${event.extendedProps.status}
+                                </span>
+                            </p>
+                        `;
+                    }
+                }
+
+                body.innerHTML = detailsHtml;
+
+                // Set link to booking details page
+                link.href = `${pageContext.request.contextPath}/booking/booking_details.jsp?id=${bookingId}`;
+                link.style.display = '';
+
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
+                modal.show();
+            }
+
+            // Show unavailable date details
+            function showUnavailableDateDetails(event) {
+                const title = document.getElementById('eventDetailsTitle');
+                const body = document.getElementById('eventDetailsBody');
+                const link = document.getElementById('eventDetailsLink');
+
+                // Set modal title
+                title.textContent = event.title || "Unavailable";
+
+                // Format date
+                const startDate = new Date(event.start);
+                const formattedDate = startDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                // Create content
+                let detailsHtml = `
+                    <p><strong>Date:</strong> ${formattedDate}</p>
+                    <p><strong>Type:</strong> <span class="badge bg-danger">Unavailable</span></p>
+                `;
+
+                if (event.allDay) {
+                    detailsHtml += `<p><strong>Duration:</strong> All Day</p>`;
+                } else {
+                    const endDate = new Date(event.end);
+                    const startTime = startDate.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    const endTime = endDate.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    detailsHtml += `<p><strong>Time:</strong> ${startTime} - ${endTime}</p>`;
+                }
+
+                body.innerHTML = detailsHtml;
+
+                // Hide details link for unavailable dates
+                link.style.display = 'none';
+
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
+                modal.show();
             }
 
             // Time Slot Selection
             document.querySelectorAll('.time-slot').forEach(slot => {
                 slot.addEventListener('click', function() {
-                    this.classList.toggle('selected');
+                    if (this.style.pointerEvents !== 'none') {
+                        this.classList.toggle('selected');
+                    }
                 });
             });
 
             // Save Availability
             document.getElementById('saveAvailability').addEventListener('click', function() {
-                const selectedDate = document.getElementById('selectedDateTitle').textContent;
-                const dateStr = new Date(selectedDate).toISOString().split('T')[0];
+                const selectedDateText = document.getElementById('selectedDateTitle').textContent;
+                const dateMatch = selectedDateText.match(/([A-Za-z]+, [A-Za-z]+ \d+, \d+)/);
+                const selectedDate = dateMatch ? new Date(dateMatch[0]) : new Date();
+                const dateStr = selectedDate.toISOString().split('T')[0];
+
                 const selectedTimeSlots = Array.from(
                     document.querySelectorAll('.time-slot.selected')
                 ).map(slot => slot.getAttribute('data-time'));
@@ -287,18 +608,16 @@
                     body: JSON.stringify({
                         date: dateStr,
                         unavailableTimeSlots: selectedTimeSlots
-
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Refresh calendar and show success message
-                        calendar.refetchEvents();
+                        // Refresh calendar
+                        window.location.reload();
                         alert('Availability saved successfully!');
-                        document.getElementById('timeSlots').style.display = 'none';
                     } else {
-                        alert('Error: ' + data.message);
+                        alert('Error: ' + (data.message || 'Failed to save availability'));
                     }
                 })
                 .catch(error => {
@@ -313,6 +632,11 @@
                 const endDate = document.getElementById('blockEndDate').value;
                 const blockAllDay = document.getElementById('blockAllDay').checked;
                 const blockReason = document.getElementById('blockReason').value || 'Unavailable';
+
+                if (!startDate) {
+                    alert('Please select a start date');
+                    return;
+                }
 
                 // Prepare form data
                 const formData = new FormData();
@@ -329,19 +653,11 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Refresh calendar and show success message
-                        calendar.refetchEvents();
-
-                        // Update unavailable dates list in modal
-                        updateUnavailableDatesList(data.blockedDates || []);
-
-                        // Close modal
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('blockDatesModal'));
-                        modal.hide();
-
+                        // Refresh page to update calendar
+                        window.location.reload();
                         alert('Dates blocked successfully!');
                     } else {
-                        alert('Error: ' + data.message);
+                        alert('Error: ' + (data.message || 'Failed to block dates'));
                     }
                 })
                 .catch(error => {
@@ -354,85 +670,9 @@
             document.querySelectorAll('.remove-blocked-date').forEach(button => {
                 button.addEventListener('click', function() {
                     const dateId = this.getAttribute('data-date-id');
+                    if (!dateId) return;
 
-                    // Call backend to remove blocked date
-                    fetch('${pageContext.request.contextPath}/photographer/remove-blocked-date', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: 'dateId=' + dateId
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Remove date from list and refresh calendar
-                            this.closest('.card').remove();
-                            calendar.refetchEvents();
-                            alert('Blocked date removed successfully!');
-                        } else {
-                            alert('Error: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while removing blocked date.');
-                    });
-                });
-            });
-
-            // Helper function to update unavailable dates list
-            function updateUnavailableDatesList(blockedDates) {
-                const listContainer = document.getElementById('unavailableDatesList');
-
-                // Clear existing list
-                listContainer.innerHTML = '';
-
-                // If no blocked dates, show no data message
-                if (!blockedDates || blockedDates.length === 0) {
-                    listContainer.innerHTML = `
-                        <div class="text-center text-muted">
-                            <i class="bi bi-calendar-check fs-1 mb-3"></i>
-                            <p>No blocked dates</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Populate list with new blocked dates
-                blockedDates.forEach(dateObj => {
-                    const dateItem = document.createElement('div');
-                    dateItem.classList.add('card', 'mb-2');
-
-                    const formattedDate = new Date(dateObj.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                    });
-
-                    dateItem.innerHTML = `
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-1">${formattedDate}</h6>
-                                <p class="text-muted mb-0">
-                                    ${dateObj.allDay ? 'Blocked entire day' : 'Blocked time slots'}
-                                    ${dateObj.reason ? '• ' + dateObj.reason : ''}
-                                </p>
-                            </div>
-                            <button class="btn btn-sm btn-outline-danger remove-blocked-date"
-                                    data-date-id="${dateObj.id}">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    `;
-
-                    listContainer.appendChild(dateItem);
-
-                    // Add event listener to new remove buttons
-                    const removeButton = dateItem.querySelector('.remove-blocked-date');
-                    removeButton.addEventListener('click', function() {
-                        const dateId = this.getAttribute('data-date-id');
-
+                    if (confirm('Are you sure you want to remove this blocked date?')) {
                         // Call backend to remove blocked date
                         fetch('${pageContext.request.contextPath}/photographer/remove-blocked-date', {
                             method: 'POST',
@@ -444,21 +684,20 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                // Remove date from list and refresh calendar
-                                this.closest('.card').remove();
-                                calendar.refetchEvents();
+                                // Refresh page to update calendar
+                                window.location.reload();
                                 alert('Blocked date removed successfully!');
                             } else {
-                                alert('Error: ' + data.message);
+                                alert('Error: ' + (data.message || 'Failed to remove blocked date'));
                             }
                         })
                         .catch(error => {
                             console.error('Error:', error);
                             alert('An error occurred while removing blocked date.');
                         });
-                    });
+                    }
                 });
-            }
+            });
         });
     </script>
 </body>

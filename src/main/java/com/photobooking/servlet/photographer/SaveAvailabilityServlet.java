@@ -20,6 +20,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 
+/**
+ * Servlet for saving photographer's availability (blocked time slots)
+ */
 @WebServlet("/photographer/save-availability")
 public class SaveAvailabilityServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -27,30 +30,43 @@ public class SaveAvailabilityServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
+        // Set response type
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        PrintWriter out = response.getWriter();
 
-        // Check if user is logged in and is a photographer
+        // Create Gson for JSON parsing/serialization
+        Gson gson = new Gson();
+
+        // Check if user is logged in
+        HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Not logged in");
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("success", false);
+            errorResponse.addProperty("message", "User not logged in");
+            out.print(gson.toJson(errorResponse));
             return;
         }
 
         User currentUser = (User) session.getAttribute("user");
         if (currentUser.getUserType() != User.UserType.PHOTOGRAPHER) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("success", false);
+            errorResponse.addProperty("message", "Only photographers can update availability");
+            out.print(gson.toJson(errorResponse));
             return;
         }
 
-        // Read JSON input
-        StringBuilder jsonBuffer = new StringBuilder();
-        String line;
-        try (java.io.BufferedReader reader = request.getReader()) {
-            while ((line = reader.readLine()) != null) {
-                jsonBuffer.append(line);
-            }
-        }
-
         try {
+            // Read JSON input
+            StringBuilder jsonBuffer = new StringBuilder();
+            String line;
+            try (java.io.BufferedReader reader = request.getReader()) {
+                while ((line = reader.readLine()) != null) {
+                    jsonBuffer.append(line);
+                }
+            }
+
             // Parse JSON input
             JsonObject jsonInput = JsonParser.parseString(jsonBuffer.toString()).getAsJsonObject();
             String dateStr = jsonInput.get("date").getAsString();
@@ -66,8 +82,8 @@ public class SaveAvailabilityServlet extends HttpServlet {
             String photographerId = currentUser.getUserId();
             UnavailableDateManager unavailableDateManager = new UnavailableDateManager();
 
-            // Check if we need to block the whole day
-            if (unavailableTimeSlots.size() == 12) { // All time slots are blocked
+            // If all time slots (12) are blocked, create an all-day unavailable date
+            if (unavailableTimeSlots.size() == 12) {
                 UnavailableDate allDayUnavailable = new UnavailableDate(
                         photographerId,
                         date,
@@ -76,8 +92,13 @@ public class SaveAvailabilityServlet extends HttpServlet {
                 );
                 unavailableDateManager.addUnavailableDate(allDayUnavailable);
             } else {
-                // Block specific time slots
+                // Block individual time slots
                 for (String timeSlot : unavailableTimeSlots) {
+                    // Calculate end time (1 hour after start time)
+                    String[] timeParts = timeSlot.split(":");
+                    int hour = Integer.parseInt(timeParts[0]);
+                    String endTime = String.format("%02d:00", (hour + 1) % 24);
+
                     UnavailableDate partialUnavailable = new UnavailableDate(
                             photographerId,
                             date,
@@ -85,37 +106,26 @@ public class SaveAvailabilityServlet extends HttpServlet {
                             "Blocked time slot"
                     );
                     partialUnavailable.setStartTime(timeSlot);
-                    partialUnavailable.setEndTime(getNextTimeSlot(timeSlot));
+                    partialUnavailable.setEndTime(endTime);
                     unavailableDateManager.addUnavailableDate(partialUnavailable);
                 }
             }
 
             // Prepare JSON response
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            PrintWriter out = response.getWriter();
+            JsonObject successResponse = new JsonObject();
+            successResponse.addProperty("success", true);
+            successResponse.addProperty("message", "Availability updated successfully");
 
-            JsonObject jsonResponse = new JsonObject();
-            jsonResponse.addProperty("success", true);
-            jsonResponse.addProperty("message", "Availability updated successfully");
-
-            out.print(new Gson().toJson(jsonResponse));
-            out.flush();
+            out.print(gson.toJson(successResponse));
 
         } catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Error saving availability: " + e.getMessage());
-        }
-    }
+            // Handle any unexpected errors
+            e.printStackTrace();
 
-    /**
-     * Get the next time slot
-     * @param currentTimeSlot Current time slot (HH:mm)
-     * @return Next time slot (HH:mm)
-     */
-    private String getNextTimeSlot(String currentTimeSlot) {
-        int currentHour = Integer.parseInt(currentTimeSlot.split(":")[0]);
-        int nextHour = currentHour + 1;
-        return String.format("%02d:00", nextHour);
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("success", false);
+            errorResponse.addProperty("message", "Error saving availability: " + e.getMessage());
+            out.print(gson.toJson(errorResponse));
+        }
     }
 }

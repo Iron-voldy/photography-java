@@ -14,6 +14,9 @@ import com.photobooking.model.photographer.UnavailableDateManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+/**
+ * Servlet for removing blocked/unavailable dates from the photographer's calendar
+ */
 @WebServlet("/photographer/remove-blocked-date")
 public class RemoveUnavailableDateServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -21,24 +24,38 @@ public class RemoveUnavailableDateServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
+        // Set response type
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        PrintWriter out = response.getWriter();
+        Gson gson = new Gson();
 
         // Check if user is logged in and is a photographer
+        HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Not logged in");
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("success", false);
+            errorResponse.addProperty("message", "Not logged in");
+            out.print(gson.toJson(errorResponse));
             return;
         }
 
         User currentUser = (User) session.getAttribute("user");
         if (currentUser.getUserType() != User.UserType.PHOTOGRAPHER) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("success", false);
+            errorResponse.addProperty("message", "Access denied");
+            out.print(gson.toJson(errorResponse));
             return;
         }
 
         // Get dateId from request
         String dateId = request.getParameter("dateId");
         if (dateId == null || dateId.trim().isEmpty()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Date ID is required");
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("success", false);
+            errorResponse.addProperty("message", "Date ID is required");
+            out.print(gson.toJson(errorResponse));
             return;
         }
 
@@ -47,22 +64,25 @@ public class RemoveUnavailableDateServlet extends HttpServlet {
             boolean removed = unavailableDateManager.removeUnavailableDate(dateId);
 
             // Prepare JSON response
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            PrintWriter out = response.getWriter();
-
             JsonObject jsonResponse = new JsonObject();
             jsonResponse.addProperty("success", removed);
             if (!removed) {
                 jsonResponse.addProperty("message", "Failed to remove unavailable date");
+            } else {
+                jsonResponse.addProperty("message", "Date removed successfully");
             }
 
-            out.print(new Gson().toJson(jsonResponse));
-            out.flush();
+            out.print(gson.toJson(jsonResponse));
 
         } catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Error removing unavailable date: " + e.getMessage());
+            // Log the error
+            e.printStackTrace();
+
+            // Return error response
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("success", false);
+            errorResponse.addProperty("message", "Error removing unavailable date: " + e.getMessage());
+            out.print(gson.toJson(errorResponse));
         }
     }
 }
