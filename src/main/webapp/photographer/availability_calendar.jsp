@@ -22,6 +22,12 @@
     List<UnavailableDate> unavailableDates = (List<UnavailableDate>) request.getAttribute("unavailableDates");
     String calendarEventsJson = (String) request.getAttribute("calendarEventsJson");
 
+    // If not coming from the servlet, redirect to it
+    if (upcomingBookings == null || unavailableDates == null || calendarEventsJson == null) {
+        response.sendRedirect(request.getContextPath() + "/photographer/availability");
+        return;
+    }
+
     // Fallback for null values
     if (upcomingBookings == null) upcomingBookings = new ArrayList<>();
     if (unavailableDates == null) unavailableDates = new ArrayList<>();
@@ -382,6 +388,11 @@
                 height: 'auto',
                 selectable: true,
                 events: <%= calendarEventsJson %>,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
                 eventClick: function(info) {
                     // Handle event clicks to show details
                     const event = info.event;
@@ -439,7 +450,7 @@
 
                     if (eventStart.toDateString() === selectedDate.toDateString()) {
                         // If it's an all-day event or unavailable date, disable all time slots
-                        if (event.allDay && event.id.startsWith('unavailable-')) {
+                        if (event.allDay && event.id && event.id.startsWith('unavailable-')) {
                             document.querySelectorAll('.time-slot').forEach(slot => {
                                 slot.classList.add('selected');
                                 slot.style.pointerEvents = 'none';
@@ -638,6 +649,13 @@
                     return;
                 }
 
+                // Debug
+                console.log('Block Dates Form Data:');
+                console.log('Start Date:', startDate);
+                console.log('End Date:', endDate);
+                console.log('All Day:', blockAllDay);
+                console.log('Reason:', blockReason);
+
                 // Prepare form data
                 const formData = new FormData();
                 formData.append('startDate', startDate);
@@ -691,12 +709,35 @@
                                 alert('Error: ' + (data.message || 'Failed to remove blocked date'));
                             }
                         })
+})
                         .catch(error => {
                             console.error('Error:', error);
                             alert('An error occurred while removing blocked date.');
                         });
                     }
                 });
+            });
+
+            // Set today's date as minimum date for date pickers
+            const today = new Date();
+            const formattedToday = today.toISOString().split('T')[0];
+            document.getElementById('blockStartDate').min = formattedToday;
+            document.getElementById('blockEndDate').min = formattedToday;
+
+            // Set today as default date
+            document.getElementById('blockStartDate').value = formattedToday;
+
+            // Synchronize end date with start date if empty
+            document.getElementById('blockStartDate').addEventListener('change', function() {
+                const endDateInput = document.getElementById('blockEndDate');
+                if (!endDateInput.value) {
+                    endDateInput.value = this.value;
+                }
+                // Ensure end date is not before start date
+                if (endDateInput.value < this.value) {
+                    endDateInput.value = this.value;
+                }
+                endDateInput.min = this.value;
             });
         });
     </script>

@@ -62,6 +62,13 @@ public class BlockDatesServlet extends HttpServlet {
             String reason = request.getParameter("reason");
             boolean allDay = request.getParameter("allDay") != null;
 
+            // Debug log
+            System.out.println("BlockDatesServlet - Received parameters:");
+            System.out.println("startDate: " + startDateStr);
+            System.out.println("endDate: " + endDateStr);
+            System.out.println("reason: " + reason);
+            System.out.println("allDay: " + allDay);
+
             // Validate start date
             if (startDateStr == null || startDateStr.isEmpty()) {
                 JsonObject errorResponse = new JsonObject();
@@ -136,13 +143,11 @@ public class BlockDatesServlet extends HttpServlet {
 
         } catch (Exception e) {
             // Handle any unexpected errors
+            e.printStackTrace();
             JsonObject errorResponse = new JsonObject();
             errorResponse.addProperty("success", false);
             errorResponse.addProperty("message", "Error blocking dates: " + e.getMessage());
             out.print(gson.toJson(errorResponse));
-
-            // Log the error
-            e.printStackTrace();
         }
     }
 }

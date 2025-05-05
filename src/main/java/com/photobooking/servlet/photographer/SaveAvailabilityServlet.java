@@ -67,10 +67,18 @@ public class SaveAvailabilityServlet extends HttpServlet {
                 }
             }
 
+            String jsonInput = jsonBuffer.toString();
+            System.out.println("SaveAvailabilityServlet - Received JSON: " + jsonInput);
+
             // Parse JSON input
-            JsonObject jsonInput = JsonParser.parseString(jsonBuffer.toString()).getAsJsonObject();
-            String dateStr = jsonInput.get("date").getAsString();
-            JsonArray unavailableTimeSlotsJson = jsonInput.getAsJsonArray("unavailableTimeSlots");
+            JsonObject jsonObj = JsonParser.parseString(jsonInput).getAsJsonObject();
+            String dateStr = jsonObj.get("date").getAsString();
+            JsonArray unavailableTimeSlotsJson = jsonObj.getAsJsonArray("unavailableTimeSlots");
+
+            // Debug log
+            System.out.println("SaveAvailabilityServlet - Parsed parameters:");
+            System.out.println("date: " + dateStr);
+            System.out.println("unavailableTimeSlots: " + unavailableTimeSlotsJson);
 
             // Convert to Java objects
             LocalDate date = LocalDate.parse(dateStr);
@@ -121,7 +129,6 @@ public class SaveAvailabilityServlet extends HttpServlet {
         } catch (Exception e) {
             // Handle any unexpected errors
             e.printStackTrace();
-
             JsonObject errorResponse = new JsonObject();
             errorResponse.addProperty("success", false);
             errorResponse.addProperty("message", "Error saving availability: " + e.getMessage());

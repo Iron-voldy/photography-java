@@ -51,6 +51,10 @@ public class RemoveUnavailableDateServlet extends HttpServlet {
 
         // Get dateId from request
         String dateId = request.getParameter("dateId");
+
+        // Debug log
+        System.out.println("RemoveUnavailableDateServlet - Received dateId: " + dateId);
+
         if (dateId == null || dateId.trim().isEmpty()) {
             JsonObject errorResponse = new JsonObject();
             errorResponse.addProperty("success", false);
