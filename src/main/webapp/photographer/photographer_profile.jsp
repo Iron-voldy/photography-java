@@ -47,7 +47,7 @@
 <body>
     <jsp:include page="../includes/header.jsp" />
 
-    <div class="photographer-banner" style="background-image: url('${pageContext.request.contextPath}/images/photographer-banner.jpg');">
+    <div class="photographer-banner" style="background-color: #343a40;">
     </div>
 
     <div class="container mt-3">
@@ -216,22 +216,69 @@
                                         <span class="text-muted ms-2">(${reviews.size()} reviews)</span>
                                     </div>
 
-                                    <!-- Rating distribution bars -->
+                                    <!-- Rating distribution bars - Fixed version without negative step -->
                                     <div class="rating-distribution">
-                                        <c:forEach begin="5" end="1" step="-1" var="star">
-                                            <div class="d-flex align-items-center mb-1">
-                                                <div class="me-2" style="width: 35px;">
-                                                    ${star} <i class="bi bi-star-fill rating-display"></i>
-                                                </div>
-                                                <div class="progress flex-grow-1" style="height: 8px;">
-                                                    <div class="progress-bar bg-warning" role="progressbar"
-                                                         style="width: ${reviews.size() > 0 ? ratingDistribution[star-1] * 100 / reviews.size() : 0}%"
-                                                         aria-valuenow="${ratingDistribution[star-1]}"
-                                                         aria-valuemin="0" aria-valuemax="${reviews.size()}"></div>
-                                                </div>
-                                                <div class="ms-2" style="width: 30px;">${ratingDistribution[star-1]}</div>
+                                        <!-- Using 5 separate elements instead of a loop with negative step -->
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="me-2" style="width: 35px;">
+                                                5 <i class="bi bi-star-fill rating-display"></i>
                                             </div>
-                                        </c:forEach>
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-warning" role="progressbar"
+                                                     style="width: ${reviews.size() > 0 ? ratingDistribution[4] * 100 / reviews.size() : 0}%"
+                                                     aria-valuenow="${ratingDistribution[4]}"
+                                                     aria-valuemin="0" aria-valuemax="${reviews.size()}"></div>
+                                            </div>
+                                            <div class="ms-2" style="width: 30px;">${ratingDistribution[4]}</div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="me-2" style="width: 35px;">
+                                                4 <i class="bi bi-star-fill rating-display"></i>
+                                            </div>
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-warning" role="progressbar"
+                                                     style="width: ${reviews.size() > 0 ? ratingDistribution[3] * 100 / reviews.size() : 0}%"
+                                                     aria-valuenow="${ratingDistribution[3]}"
+                                                     aria-valuemin="0" aria-valuemax="${reviews.size()}"></div>
+                                            </div>
+                                            <div class="ms-2" style="width: 30px;">${ratingDistribution[3]}</div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="me-2" style="width: 35px;">
+                                                3 <i class="bi bi-star-fill rating-display"></i>
+                                            </div>
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-warning" role="progressbar"
+                                                     style="width: ${reviews.size() > 0 ? ratingDistribution[2] * 100 / reviews.size() : 0}%"
+                                                     aria-valuenow="${ratingDistribution[2]}"
+                                                     aria-valuemin="0" aria-valuemax="${reviews.size()}"></div>
+                                            </div>
+                                            <div class="ms-2" style="width: 30px;">${ratingDistribution[2]}</div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="me-2" style="width: 35px;">
+                                                2 <i class="bi bi-star-fill rating-display"></i>
+                                            </div>
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-warning" role="progressbar"
+                                                     style="width: ${reviews.size() > 0 ? ratingDistribution[1] * 100 / reviews.size() : 0}%"
+                                                     aria-valuenow="${ratingDistribution[1]}"
+                                                     aria-valuemin="0" aria-valuemax="${reviews.size()}"></div>
+                                            </div>
+                                            <div class="ms-2" style="width: 30px;">${ratingDistribution[1]}</div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="me-2" style="width: 35px;">
+                                                1 <i class="bi bi-star-fill rating-display"></i>
+                                            </div>
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-warning" role="progressbar"
+                                                     style="width: ${reviews.size() > 0 ? ratingDistribution[0] * 100 / reviews.size() : 0}%"
+                                                     aria-valuenow="${ratingDistribution[0]}"
+                                                     aria-valuemin="0" aria-valuemax="${reviews.size()}"></div>
+                                            </div>
+                                            <div class="ms-2" style="width: 30px;">${ratingDistribution[0]}</div>
+                                        </div>
                                     </div>
                                 </div>
 
