@@ -13,11 +13,13 @@ import com.photobooking.model.photographer.Photographer;
 import com.photobooking.model.photographer.PhotographerManager;
 import com.photobooking.util.ValidationUtil;
 import com.photobooking.util.FileHandler;
+import com.photobooking.util.EnhancedSortingUtility;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
 /**
  * Servlet for handling the photographer list display and search functionality
+ * Updated to use enhanced sorting functionality
  */
 @WebServlet("/photographer/list")
 public class PhotographerListServlet extends HttpServlet {
@@ -83,7 +85,7 @@ public class PhotographerListServlet extends HttpServlet {
                 LOGGER.info("PhotographerListServlet: Got filtered photographers: " + photographers.size());
             }
 
-            // Apply sorting
+            // Apply sorting - Now using the enhanced sorting methods
             photographers = applySorting(photographerManager, photographers, sortBy);
 
             // Apply pagination
@@ -151,7 +153,7 @@ public class PhotographerListServlet extends HttpServlet {
     }
 
     /**
-     * Apply sorting to photographer list
+     * Apply sorting to photographer list using enhanced sorting utilities
      */
     private List<Photographer> applySorting(PhotographerManager manager,
                                             List<Photographer> photographers, String sortBy) {

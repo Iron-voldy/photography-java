@@ -1,6 +1,7 @@
 package com.photobooking.model.photographer;
 
 import com.photobooking.util.FileHandler;
+import com.photobooking.util.EnhancedSortingUtility;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -11,6 +12,7 @@ import javax.servlet.ServletContext;
 
 /**
  * Manages photographer-related operations for the Event Photography System
+ * Updated to use the enhanced bubble sort implementation
  */
 public class PhotographerManager {
     private static final Logger LOGGER = Logger.getLogger(PhotographerManager.class.getName());
@@ -90,13 +92,12 @@ public class PhotographerManager {
             // Ensure file exists after deletion
             FileHandler.ensureFileExists(PHOTOGRAPHER_FILE);
 
-            // Write each photographer to file
+            // Write all content at once
             StringBuilder contentToWrite = new StringBuilder();
             for (Photographer photographer : photographers) {
                 contentToWrite.append(photographer.toFileString()).append(System.lineSeparator());
             }
 
-            // Write all content at once
             boolean result = FileHandler.writeToFile(PHOTOGRAPHER_FILE, contentToWrite.toString(), false);
 
             if (result) {
@@ -236,46 +237,14 @@ public class PhotographerManager {
     }
 
     /**
-     * Sort photographers by rating (bubble sort implementation)
+     * Sort photographers by rating using enhanced bubble sort
      * @param photographerList List of photographers to sort
      * @param ascending If true, sort in ascending order; otherwise, sort in descending order
      * @return Sorted list of photographers
      */
     public List<Photographer> sortPhotographersByRating(List<Photographer> photographerList, boolean ascending) {
-        if (photographerList == null || photographerList.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        List<Photographer> sortedList = new ArrayList<>(photographerList);
-        int n = sortedList.size();
-        boolean swapped;
-
-        for (int i = 0; i < n - 1; i++) {
-            swapped = false;
-            for (int j = 0; j < n - i - 1; j++) {
-                boolean shouldSwap;
-                if (ascending) {
-                    shouldSwap = sortedList.get(j).getRating() > sortedList.get(j + 1).getRating();
-                } else {
-                    shouldSwap = sortedList.get(j).getRating() < sortedList.get(j + 1).getRating();
-                }
-
-                if (shouldSwap) {
-                    // Swap elements
-                    Photographer temp = sortedList.get(j);
-                    sortedList.set(j, sortedList.get(j + 1));
-                    sortedList.set(j + 1, temp);
-                    swapped = true;
-                }
-            }
-
-            // If no swapping occurred in this pass, array is sorted
-            if (!swapped) {
-                break;
-            }
-        }
-
-        return sortedList;
+        // Use the enhanced bubble sort implementation
+        return EnhancedSortingUtility.bubbleSortByRating(photographerList, ascending);
     }
 
     /**
@@ -323,55 +292,42 @@ public class PhotographerManager {
     }
 
     /**
-     * Sort photographers by price
+     * Sort photographers by price using enhanced bubble sort
      * @param ascending If true, sort in ascending order; otherwise, sort in descending order
      * @return Sorted list of photographers
      */
     public List<Photographer> sortPhotographersByPrice(boolean ascending) {
-        Comparator<Photographer> comparator = Comparator.comparing(Photographer::getBasePrice);
-
-        if (!ascending) {
-            comparator = comparator.reversed();
-        }
-
-        return photographers.stream()
-                .sorted(comparator)
-                .collect(Collectors.toList());
+        // Use the enhanced bubble sort implementation
+        return EnhancedSortingUtility.bubbleSortByPrice(photographers, ascending);
     }
 
     /**
-     * Sort photographers by experience
+     * Sort photographers by experience using enhanced bubble sort with generic implementation
      * @param ascending If true, sort in ascending order; otherwise, sort in descending order
      * @return Sorted list of photographers
      */
     public List<Photographer> sortPhotographersByExperience(boolean ascending) {
-        Comparator<Photographer> comparator = Comparator.comparing(Photographer::getYearsOfExperience);
+        // Create a comparator for years of experience
+        Comparator<Photographer> comparator = (p1, p2) -> {
+            if (ascending) {
+                return Integer.compare(p1.getYearsOfExperience(), p2.getYearsOfExperience());
+            } else {
+                return Integer.compare(p2.getYearsOfExperience(), p1.getYearsOfExperience());
+            }
+        };
 
-        if (!ascending) {
-            comparator = comparator.reversed();
-        }
-
-        return photographers.stream()
-                .sorted(comparator)
-                .collect(Collectors.toList());
+        // Use the generic bubble sort implementation
+        return EnhancedSortingUtility.bubbleSort(photographers, comparator);
     }
 
     /**
-     * Sort photographers by name
+     * Sort photographers by name using enhanced bubble sort
      * @param ascending If true, sort in ascending order; otherwise, sort in descending order
      * @return Sorted list of photographers
      */
     public List<Photographer> sortPhotographersByName(boolean ascending) {
-        Comparator<Photographer> comparator = Comparator.comparing(
-                p -> p.getBusinessName() != null ? p.getBusinessName().toLowerCase() : "");
-
-        if (!ascending) {
-            comparator = comparator.reversed();
-        }
-
-        return photographers.stream()
-                .sorted(comparator)
-                .collect(Collectors.toList());
+        // Use the enhanced bubble sort implementation for names
+        return EnhancedSortingUtility.bubbleSortByName(photographers, ascending);
     }
 
     /**

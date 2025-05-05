@@ -14,6 +14,7 @@ import javax.servlet.http.HttpSession;
 
 import com.photobooking.model.booking.Booking;
 import com.photobooking.model.booking.BookingManager;
+import com.photobooking.model.booking.BookingQueueManager;
 import com.photobooking.model.photographer.Photographer;
 import com.photobooking.model.photographer.PhotographerManager;
 import com.photobooking.model.photographer.PhotographerService;
@@ -24,6 +25,7 @@ import com.photobooking.util.ValidationUtil;
 /**
  * Servlet for creating new bookings in the Event Photography System
  * Maps to both /booking/create and /booking/create-booking for compatibility
+ * Modified to use the queue system for booking management
  */
 @WebServlet(urlPatterns = {"/booking/create", "/booking/create-booking"})
 public class BookingCreateServlet extends HttpServlet {
@@ -144,24 +146,23 @@ public class BookingCreateServlet extends HttpServlet {
             booking.setBookingDateTime(LocalDateTime.now());
             booking.setStatus(Booking.BookingStatus.PENDING);
 
-            // Save the booking
-            boolean created = bookingManager.createBooking(booking);
+            // Use the booking queue instead of direct creation
+            BookingQueueManager queueManager = BookingQueueManager.getInstance(getServletContext());
+            boolean queued = queueManager.queueBooking(booking);
 
-            if (created) {
+            if (queued) {
                 // Increment service booking count
                 service.incrementBookingCount();
                 serviceManager.updateService(service);
 
                 // Set success message
-                session.setAttribute("successMessage", "Your booking has been created successfully!");
+                session.setAttribute("successMessage",
+                        "Your booking has been queued and is awaiting approval from the photographer!");
 
-                // Forward to booking confirmation page
-                request.setAttribute("booking", booking);
-                request.setAttribute("photographer", photographer);
-                request.setAttribute("service", service);
-                request.getRequestDispatcher("/booking/booking_confirmation.jsp").forward(request, response);
+                // Redirect to the queue page to show pending booking
+                response.sendRedirect(request.getContextPath() + "/booking/queue");
             } else {
-                session.setAttribute("errorMessage", "Failed to create booking. Please try again.");
+                session.setAttribute("errorMessage", "Failed to queue booking. Please try again.");
                 response.sendRedirect(request.getContextPath() + "/booking/booking_form.jsp?photographerId="
                         + photographerId + "&serviceId=" + serviceId);
             }
