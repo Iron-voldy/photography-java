@@ -22,6 +22,7 @@ import com.photobooking.model.user.User;
 import com.photobooking.util.FileHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.Gson;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -61,66 +62,75 @@ public class DashboardServlet extends HttpServlet {
         // Ensure files exist
         FileHandler.ensureFileExists("photographers.txt");
         FileHandler.ensureFileExists("services.txt");
+        FileHandler.ensureFileExists("bookings.txt");
+        FileHandler.ensureFileExists("reviews.txt");
 
         String userId = currentUser.getUserId();
 
-        // Get photographer profile
-        PhotographerManager photographerManager = new PhotographerManager();
-        Photographer photographer = photographerManager.getPhotographerByUserId(userId);
+        // Debug log
+        LOGGER.info("Loading dashboard for photographer user ID: " + userId);
 
-        // If photographer profile doesn't exist, create one
-        if (photographer == null) {
-            try {
-                photographer = new Photographer();
-                photographer.setUserId(userId);
-                photographer.setBusinessName(currentUser.getFullName() + "'s Photography");
-                photographer.setBiography("Professional photographer offering various photography services.");
-                photographer.setSpecialties(new ArrayList<>());
-                photographer.getSpecialties().add("General");
-                photographer.setLocation("Not specified");
-                photographer.setBasePrice(100.0); // Default base price
-                photographer.setEmail(currentUser.getEmail());
+        try {
+            // Get photographer profile
+            PhotographerManager photographerManager = new PhotographerManager(getServletContext());
+            Photographer photographer = photographerManager.getPhotographerByUserId(userId);
 
-                // Save the photographer profile
-                boolean profileCreated = photographerManager.addPhotographer(photographer);
+            // If photographer profile doesn't exist, create one
+            if (photographer == null) {
+                try {
+                    photographer = new Photographer();
+                    photographer.setUserId(userId);
+                    photographer.setBusinessName(currentUser.getFullName() + "'s Photography");
+                    photographer.setBiography("Professional photographer offering various photography services.");
+                    photographer.setSpecialties(new ArrayList<>());
+                    photographer.getSpecialties().add("General");
+                    photographer.setLocation("Not specified");
+                    photographer.setBasePrice(100.0); // Default base price
+                    photographer.setEmail(currentUser.getEmail());
 
-                if (profileCreated) {
-                    LOGGER.info("Created missing photographer profile for user: " + currentUser.getUsername());
+                    // Save the photographer profile
+                    boolean profileCreated = photographerManager.addPhotographer(photographer);
 
-                    try {
-                        // Create default services for the photographer
-                        PhotographerServiceManager serviceManager = new PhotographerServiceManager();
-                        serviceManager.createDefaultServices(photographer.getPhotographerId());
-                    } catch (Exception e) {
-                        LOGGER.log(Level.WARNING, "Error creating default services: " + e.getMessage(), e);
+                    if (profileCreated) {
+                        LOGGER.info("Created missing photographer profile for user: " + currentUser.getUsername());
+
+                        try {
+                            // Create default services for the photographer
+                            PhotographerServiceManager serviceManager = new PhotographerServiceManager(getServletContext());
+                            serviceManager.createDefaultServices(photographer.getPhotographerId());
+                        } catch (Exception e) {
+                            LOGGER.log(Level.WARNING, "Error creating default services: " + e.getMessage(), e);
+                        }
+
+                        // Set photographerId in session
+                        session.setAttribute("photographerId", photographer.getPhotographerId());
+                    } else {
+                        LOGGER.log(Level.SEVERE, "Failed to create photographer profile for user: " + currentUser.getUsername());
+                        session.setAttribute("errorMessage", "Failed to create photographer profile. Please contact support.");
+                        response.sendRedirect(request.getContextPath() + "/user/dashboard.jsp");
+                        return;
                     }
-
-                    // Set photographerId in session
-                    session.setAttribute("photographerId", photographer.getPhotographerId());
-                } else {
-                    LOGGER.log(Level.SEVERE, "Failed to create photographer profile for user: " + currentUser.getUsername());
-                    session.setAttribute("errorMessage", "Failed to create photographer profile. Please contact support.");
+                } catch (Exception e) {
+                    LOGGER.log(Level.SEVERE, "Error creating photographer profile: " + e.getMessage(), e);
+                    session.setAttribute("errorMessage", "Error creating photographer profile: " + e.getMessage());
                     response.sendRedirect(request.getContextPath() + "/user/dashboard.jsp");
                     return;
                 }
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Error creating photographer profile: " + e.getMessage(), e);
-                session.setAttribute("errorMessage", "Error creating photographer profile: " + e.getMessage());
-                response.sendRedirect(request.getContextPath() + "/user/dashboard.jsp");
-                return;
+            } else {
+                // Set photographerId in session if it's not already there
+                if (session.getAttribute("photographerId") == null) {
+                    session.setAttribute("photographerId", photographer.getPhotographerId());
+                }
             }
-        } else {
-            // Set photographerId in session if it's not already there
-            if (session.getAttribute("photographerId") == null) {
-                session.setAttribute("photographerId", photographer.getPhotographerId());
-            }
-        }
 
-        try {
-            // Get dashboard statistics
-            BookingManager bookingManager = new BookingManager();
+            // Dashboard data
+            BookingManager bookingManager = new BookingManager(getServletContext());
             List<Booking> upcomingBookings = bookingManager.getUpcomingBookings(userId, true);
             List<Booking> allBookings = bookingManager.getBookingsByPhotographer(userId);
+
+            // Debug log
+            LOGGER.info("Found " + upcomingBookings.size() + " upcoming bookings");
+            LOGGER.info("Found " + allBookings.size() + " total bookings");
 
             // Calculate statistics
             int totalBookings = allBookings.size();
@@ -134,14 +144,15 @@ public class DashboardServlet extends HttpServlet {
             // Get recent reviews
             ReviewManager reviewManager = new ReviewManager();
             List<Review> recentReviews = reviewManager.getPhotographerReviews(photographer.getPhotographerId());
+            LOGGER.info("Found " + recentReviews.size() + " reviews");
 
             // Prepare calendar events
             JsonArray calendarEvents = prepareCalendarEvents(upcomingBookings, bookingManager);
+            LOGGER.info("Prepared " + calendarEvents.size() + " calendar events");
 
             // Set attributes for JSP
             request.setAttribute("photographer", photographer);
             request.setAttribute("upcomingBookings", upcomingBookings);
-            request.setAttribute("upcomingBookingsCount", upcomingBookings.size());
             request.setAttribute("totalBookings", totalBookings);
             request.setAttribute("completedBookings", completedBookings);
             request.setAttribute("recentReviews", recentReviews);
@@ -159,33 +170,45 @@ public class DashboardServlet extends HttpServlet {
         JsonArray events = new JsonArray();
 
         for (Booking booking : bookings) {
-            JsonObject event = new JsonObject();
-            event.addProperty("id", "booking-" + booking.getBookingId());
-            event.addProperty("title", getBookingTypeDisplayName(booking.getEventType()));
-            event.addProperty("start", booking.getEventDateTime().toString());
+            try {
+                JsonObject event = new JsonObject();
+                event.addProperty("id", "booking-" + booking.getBookingId());
+                event.addProperty("title", getBookingTypeDisplayName(booking.getEventType()));
 
-            // Set event color based on status
-            String backgroundColor;
-            switch (booking.getStatus()) {
-                case CONFIRMED:
-                    backgroundColor = "#28a745"; // Green
-                    break;
-                case PENDING:
-                    backgroundColor = "#ffc107"; // Yellow
-                    break;
-                default:
-                    backgroundColor = "#6c757d"; // Gray
+                // Make sure we have a valid date
+                if (booking.getEventDateTime() != null) {
+                    event.addProperty("start", booking.getEventDateTime().toString());
+                } else {
+                    LOGGER.warning("Warning: Booking " + booking.getBookingId() + " has null eventDateTime");
+                    continue; // Skip this booking
+                }
+
+                // Set color based on booking status
+                String backgroundColor = getBookingStatusColor(booking.getStatus());
+                event.addProperty("backgroundColor", backgroundColor);
+                event.addProperty("borderColor", backgroundColor);
+
+                // Add more details as extendedProps
+                JsonObject extendedProps = new JsonObject();
+                extendedProps.addProperty("description", "Location: " + booking.getEventLocation());
+                extendedProps.addProperty("status", booking.getStatus().toString());
+                event.add("extendedProps", extendedProps);
+
+                events.add(event);
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Error processing booking for calendar: " + e.getMessage(), e);
             }
-            event.addProperty("backgroundColor", backgroundColor);
-            event.addProperty("borderColor", backgroundColor);
-
-            events.add(event);
         }
 
         return events;
     }
 
+    /**
+     * Get booking type display name
+     */
     private String getBookingTypeDisplayName(Booking.BookingType type) {
+        if (type == null) return "Photography Session";
+
         switch (type) {
             case WEDDING:
                 return "Wedding Photography";
@@ -201,6 +224,26 @@ public class DashboardServlet extends HttpServlet {
                 return "Product Photography";
             default:
                 return "Photography Session";
+        }
+    }
+
+    /**
+     * Get booking status color
+     */
+    private String getBookingStatusColor(Booking.BookingStatus status) {
+        if (status == null) return "#6c757d";  // Gray
+
+        switch (status) {
+            case CONFIRMED:
+                return "#28a745";  // Green
+            case PENDING:
+                return "#ffc107";  // Yellow
+            case CANCELLED:
+                return "#dc3545";  // Red
+            case COMPLETED:
+                return "#007bff";  // Blue
+            default:
+                return "#6c757d";  // Gray
         }
     }
 }

@@ -33,11 +33,19 @@ public class BookingQueueManager {
      * @param servletContext The servlet context
      */
     private BookingQueueManager(ServletContext servletContext) {
-        bookingManager = new BookingManager(servletContext);
-        mainQueue = new BookingQueue(bookingManager);
-        photographerQueues = new HashMap<>();
+        try {
+            LOGGER.info("Initializing BookingQueueManager with context: " +
+                    (servletContext != null ? servletContext.getContextPath() : "null"));
 
-        LOGGER.info("BookingQueueManager initialized");
+            bookingManager = new BookingManager(servletContext);
+            mainQueue = new BookingQueue(bookingManager);
+            photographerQueues = new HashMap<>();
+
+            LOGGER.info("BookingQueueManager initialized successfully");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error initializing BookingQueueManager: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to initialize BookingQueueManager", e);
+        }
     }
 
     /**
@@ -47,7 +55,13 @@ public class BookingQueueManager {
      */
     public static synchronized BookingQueueManager getInstance(ServletContext servletContext) {
         if (instance == null) {
-            instance = new BookingQueueManager(servletContext);
+            try {
+                LOGGER.info("Creating new BookingQueueManager instance");
+                instance = new BookingQueueManager(servletContext);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Failed to create BookingQueueManager instance: " + e.getMessage(), e);
+                return null; // Return null instead of throwing so that callers can handle it gracefully
+            }
         }
         return instance;
     }
@@ -235,5 +249,13 @@ public class BookingQueueManager {
         }
 
         LOGGER.info("All booking queues cleared");
+    }
+
+    /**
+     * Reset the singleton instance (useful for testing)
+     */
+    public static void resetInstance() {
+        instance = null;
+        LOGGER.info("BookingQueueManager instance reset");
     }
 }

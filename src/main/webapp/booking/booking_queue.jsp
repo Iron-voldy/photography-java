@@ -1,9 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page import="com.photobooking.model.booking.BookingQueueManager" %>
 <%@ page import="com.photobooking.model.booking.Booking" %>
 <%@ page import="com.photobooking.model.user.User" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 
 <%
     // Get current user from session
@@ -14,22 +16,30 @@
         return;
     }
 
-    BookingQueueManager queueManager = BookingQueueManager.getInstance(application);
+    // Check if we have the queued bookings attribute from the servlet
+    List<Booking> queuedBookings = (List<Booking>) request.getAttribute("queuedBookings");
 
-    // Get queue statistics for the user
-    int totalQueueSize = queueManager.getQueueSize();
-    int userQueueSize = 0;
-
-    if (currentUser.getUserType() == User.UserType.PHOTOGRAPHER) {
-        userQueueSize = queueManager.getQueueSizeForPhotographer(currentUser.getUserId());
-    } else if (currentUser.getUserType() == User.UserType.CLIENT) {
-        List<Booking> clientBookings = queueManager.getQueuedBookingsForClient(currentUser.getUserId());
-        userQueueSize = clientBookings.size();
-    } else {
-        // For admin, user queue size is the same as total
-        userQueueSize = totalQueueSize;
+    // If we don't have queued bookings from the servlet, redirect to the servlet first
+    if (queuedBookings == null) {
+        response.sendRedirect(request.getContextPath() + "/booking/queue");
+        return;
     }
 
+    // Fallback to empty list if needed
+    if (queuedBookings == null) {
+        queuedBookings = new ArrayList<>();
+    }
+
+    // Get queue statistics from the servlet or directly (fallback)
+    Integer totalQueueSize = (Integer) request.getAttribute("totalQueueSize");
+    Integer userQueueSize = (Integer) request.getAttribute("userQueueSize");
+
+    // Use fallback values if attributes are not set
+    if (totalQueueSize == null) totalQueueSize = queuedBookings.size();
+    if (userQueueSize == null) userQueueSize = queuedBookings.size();
+
+    // Set attributes in request for use in JSP
+    request.setAttribute("queuedBookings", queuedBookings);
     request.setAttribute("totalQueueSize", totalQueueSize);
     request.setAttribute("userQueueSize", userQueueSize);
 %>
@@ -118,7 +128,7 @@
         <!-- Include Messages -->
         <jsp:include page="/includes/messages.jsp" />
 
-        <!-- Queue Statistics -->
+<!-- Queue Statistics -->
         <div class="row mb-4">
             <div class="col-md-8 offset-md-2">
                 <div class="queue-stats">
@@ -141,19 +151,11 @@
                                 </div>
                             </div>
                         </div>
-                        <c:if test="${sessionScope.user.userType == 'ADMIN'}">
+                        <c:if test="${sessionScope.user.userType == 'ADMIN' || sessionScope.user.userType == 'PHOTOGRAPHER'}">
                             <div class="col-md-6">
                                 <div class="stat-item">
                                     <div class="stat-number">${totalQueueSize}</div>
                                     <div class="stat-label">System-wide Queue Size</div>
-                                </div>
-                            </div>
-                        </c:if>
-                        <c:if test="${sessionScope.user.userType == 'PHOTOGRAPHER'}">
-                            <div class="col-md-6">
-                                <div class="stat-item">
-                                    <div class="stat-number">${totalQueueSize}</div>
-                                    <div class="stat-label">Total System Queue Size</div>
                                 </div>
                             </div>
                         </c:if>
