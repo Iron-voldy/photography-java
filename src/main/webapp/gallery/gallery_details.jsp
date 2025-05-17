@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
     <!-- Lightbox CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.1/css/lightbox.min.css" rel="stylesheet">
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -154,6 +154,17 @@
         .edit-modal .modal-title {
             font-weight: 600;
         }
+
+        /* Placeholder image styling */
+        .placeholder-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #e9ecef;
+            color: #6c757d;
+            height: 200px;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
@@ -238,9 +249,23 @@
                                 <c:forEach var="photo" items="${photos}">
                                     <div class="col-md-4">
                                         <div class="photo-item">
-                                            <a href="${pageContext.request.contextPath}/${photo.filePath}" data-lightbox="gallery" data-title="${not empty photo.title ? photo.title : photo.originalFileName}">
-                                                <img src="${pageContext.request.contextPath}/${photo.thumbnailPath}" class="photo-img" alt="${not empty photo.title ? photo.title : photo.originalFileName}">
-                                            </a>
+                                            <c:choose>
+                                                <c:when test="${empty photo.thumbnailPath}">
+                                                    <div class="placeholder-image">
+                                                        <i class="bi bi-image fs-1"></i>
+                                                    </div>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <a href="${pageContext.request.contextPath}/photos/${photo.fileName}"
+                                                       data-lightbox="gallery-images"
+                                                       data-title="${not empty photo.title ? photo.title : photo.originalFileName}">
+                                                        <img src="${pageContext.request.contextPath}/photos/${photo.fileName}"
+                                                             class="photo-img"
+                                                             alt="${not empty photo.title ? photo.title : photo.originalFileName}"
+                                                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'placeholder-image\'><i class=\'bi bi-image fs-1\'></i><p class=\'mt-2 small\'>Image not available</p></div>'; this.parentNode.href='#';">
+                                                    </a>
+                                                </c:otherwise>
+                                            </c:choose>
 
                                             <c:if test="${isOwner}">
                                                 <div class="photo-actions">
@@ -448,18 +473,31 @@
     <!-- Include Footer -->
     <jsp:include page="/includes/footer.jsp" />
 
-    <!-- Lightbox JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
-
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Lightbox JS - make sure to load this AFTER Bootstrap's JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.1/js/lightbox.min.js"></script>
+
     <script>
-        // Configure Lightbox
-        lightbox.option({
-            'resizeDuration': 200,
-            'wrapAround': true,
-            'albumLabel': "Photo %1 of %2"
+        // Make sure DOM is loaded before running scripts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize lightbox if it exists
+            if (typeof window.lightbox !== 'undefined') {
+                window.lightbox.option({
+                    'resizeDuration': 200,
+                    'wrapAround': true,
+                    'albumLabel': "Photo %1 of %2"
+                });
+            }
+
+            // Initialize image handling
+            document.querySelectorAll('.photo-img').forEach(function(img) {
+                img.addEventListener('error', function() {
+                    // If image fails to load, replace with placeholder
+                    this.src = '${pageContext.request.contextPath}/assets/images/placeholder.png';
+                });
+            });
         });
 
         // Edit Photo

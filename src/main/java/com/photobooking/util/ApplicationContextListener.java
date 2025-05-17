@@ -6,9 +6,6 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 import java.util.logging.Logger;
 
-/**
- * Application context listener to initialize system components
- */
 @WebListener
 public class ApplicationContextListener implements ServletContextListener {
     private static final Logger LOGGER = Logger.getLogger(ApplicationContextListener.class.getName());
@@ -18,7 +15,6 @@ public class ApplicationContextListener implements ServletContextListener {
         ServletContext context = sce.getServletContext();
         LOGGER.info("Application context initialized. Configuring file system...");
 
-        // Initialize FileHandler with ServletContext
         FileHandler.setServletContext(context);
 
         LOGGER.info("File system configured successfully.");
