@@ -261,9 +261,9 @@
                                 <div class="position-relative">
                                     <c:set var="coverPhoto" value="${coverPhotos[gallery.galleryId]}" />
                                     <c:choose>
-                                        <c:when test="${not empty coverPhoto}">
+                                        <c:when test="${not empty coverPhoto && not empty coverPhoto.fileName}">
                                             <div class="card-img-container">
-                                                <img src="${pageContext.request.contextPath}/${coverPhoto.thumbnailPath}"
+                                                <img src="${pageContext.request.contextPath}/photos/${coverPhoto.fileName}"
                                                      class="card-img-top gallery-thumbnail"
                                                      alt="${gallery.title}"
                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -358,7 +358,7 @@
             </c:choose>
         </div>
 
-        <%-- Debug Information --%>
+        <%-- Debug Section (can be removed in production) --%>
         <div class="alert alert-info">
             <h5>Debug Information</h5>
             <p>Total Galleries Loaded: ${galleries.size()}</p>
@@ -372,7 +372,9 @@
                             Category: ${gallery.category}<br>
                             Cover Photo ID: ${gallery.coverPhotoId}<br>
                             <c:if test="${not empty coverPhotos[gallery.galleryId]}">
-                                Cover Photo Path: ${coverPhotos[gallery.galleryId].thumbnailPath}
+                                <c:set var="coverPhoto" value="${coverPhotos[gallery.galleryId]}" />
+                                Cover Photo Path: ${coverPhoto.fileName}<br>
+                                Photo ID: ${coverPhoto.photoId}
                             </c:if>
                         </li>
                     </c:forEach>
@@ -464,13 +466,13 @@
                 sortGalleries.addEventListener('change', function() {
                     const sortValue = this.value;
                     const container = document.querySelector('.row.g-4');
-                    const items = Array.from(container.querySelectorAll('.col-md-6'));
+                    const items = Array.from(container.querySelectorAll('.col-md-6, .col-md-12, .col-lg-4'));
 
                     items.sort(function(a, b) {
-                        const dateA = new Date(a.querySelector('.text-muted').textContent);
-                        const dateB = new Date(b.querySelector('.text-muted').textContent);
-                        const titleA = a.querySelector('.card-title').textContent;
-                        const titleB = b.querySelector('.card-title').textContent;
+                        const dateA = new Date(a.querySelector('.text-muted').textContent.trim());
+                        const dateB = new Date(b.querySelector('.text-muted').textContent.trim());
+                        const titleA = a.querySelector('.card-title').textContent.trim();
+                        const titleB = b.querySelector('.card-title').textContent.trim();
 
                         if (sortValue === 'date-desc') {
                             return dateB - dateA;

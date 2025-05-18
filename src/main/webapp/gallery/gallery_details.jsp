@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
     <!-- Lightbox CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.1/css/lightbox.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -250,7 +250,7 @@
                                     <div class="col-md-4">
                                         <div class="photo-item">
                                             <c:choose>
-                                                <c:when test="${empty photo.thumbnailPath}">
+                                                <c:when test="${empty photo.fileName}">
                                                     <div class="placeholder-image">
                                                         <i class="bi bi-image fs-1"></i>
                                                     </div>
@@ -262,7 +262,7 @@
                                                         <img src="${pageContext.request.contextPath}/photos/${photo.fileName}"
                                                              class="photo-img"
                                                              alt="${not empty photo.title ? photo.title : photo.originalFileName}"
-                                                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'placeholder-image\'><i class=\'bi bi-image fs-1\'></i><p class=\'mt-2 small\'>Image not available</p></div>'; this.parentNode.href='#';">
+                                                             onerror="this.onerror=null; this.parentElement.parentElement.innerHTML='<div class=\\'placeholder-image\\'><i class=\\'bi bi-image fs-1\\'></i><p class=\\'mt-2 small\\'>Image not available</p></div>';">
                                                     </a>
                                                 </c:otherwise>
                                             </c:choose>
@@ -477,36 +477,29 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Lightbox JS - make sure to load this AFTER Bootstrap's JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.1/js/lightbox.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox-plus-jquery.min.js"></script>
 
     <script>
-        // Make sure DOM is loaded before running scripts
+        // Initialize gallery functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize lightbox if it exists
-            if (typeof window.lightbox !== 'undefined') {
-                window.lightbox.option({
-                    'resizeDuration': 200,
-                    'wrapAround': true,
-                    'albumLabel': "Photo %1 of %2"
-                });
-            }
-
-            // Initialize image handling
-            document.querySelectorAll('.photo-img').forEach(function(img) {
-                img.addEventListener('error', function() {
-                    // If image fails to load, replace with placeholder
-                    this.src = '${pageContext.request.contextPath}/assets/images/placeholder.png';
-                });
+            // Initialize lightbox
+            lightbox.option({
+                'resizeDuration': 200,
+                'wrapAround': true,
+                'albumLabel': "Photo %1 of %2",
+                'fadeDuration': 300,
+                'positionFromTop': 100
             });
         });
 
         // Edit Photo
         function editPhoto(photoId, title, description) {
             document.getElementById('photoId').value = photoId;
-            document.getElementById('photoTitle').value = title;
-            document.getElementById('photoDescription').value = description;
+            document.getElementById('photoTitle').value = title || '';
+            document.getElementById('photoDescription').value = description || '';
             document.getElementById('setCover').checked = false;
 
+            // Show modal
             var editModal = new bootstrap.Modal(document.getElementById('editPhotoModal'));
             editModal.show();
         }
@@ -521,8 +514,10 @@
 
         // Set Cover Photo
         function setCoverPhoto(photoId) {
-            document.getElementById('coverPhotoId').value = photoId;
-            document.getElementById('setCoverPhotoForm').submit();
+            if (confirm('Set this photo as the gallery cover?')) {
+                document.getElementById('coverPhotoId').value = photoId;
+                document.getElementById('setCoverPhotoForm').submit();
+            }
         }
 
         // Copy Share URL
@@ -530,9 +525,23 @@
             var copyText = document.getElementById("shareUrl");
             copyText.select();
             copyText.setSelectionRange(0, 99999);
-            document.execCommand("copy");
 
-            alert("Gallery link copied to clipboard!");
+            try {
+                // Modern way (clipboard API)
+                navigator.clipboard.writeText(copyText.value)
+                    .then(() => {
+                        alert("Gallery link copied to clipboard!");
+                    })
+                    .catch(err => {
+                        // Fallback to execCommand
+                        document.execCommand("copy");
+                        alert("Gallery link copied to clipboard!");
+                    });
+            } catch (err) {
+                // Old way fallback
+                document.execCommand("copy");
+                alert("Gallery link copied to clipboard!");
+            }
         }
     </script>
 </body>
