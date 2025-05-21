@@ -11,6 +11,7 @@ import javax.servlet.http.HttpSession;
 
 import com.photobooking.model.user.User;
 import com.photobooking.model.photographer.UnavailableDateManager;
+import com.photobooking.util.ValidationUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -50,12 +51,12 @@ public class RemoveUnavailableDateServlet extends HttpServlet {
         }
 
         // Get dateId from request
-        String dateId = request.getParameter("dateId");
+        String dateId = ValidationUtil.cleanInput(request.getParameter("dateId"));
 
         // Debug log
         System.out.println("RemoveUnavailableDateServlet - Received dateId: " + dateId);
 
-        if (dateId == null || dateId.trim().isEmpty()) {
+        if (ValidationUtil.isNullOrEmpty(dateId)) {
             JsonObject errorResponse = new JsonObject();
             errorResponse.addProperty("success", false);
             errorResponse.addProperty("message", "Date ID is required");
@@ -70,6 +71,7 @@ public class RemoveUnavailableDateServlet extends HttpServlet {
             // Prepare JSON response
             JsonObject jsonResponse = new JsonObject();
             jsonResponse.addProperty("success", removed);
+
             if (!removed) {
                 jsonResponse.addProperty("message", "Failed to remove unavailable date");
             } else {

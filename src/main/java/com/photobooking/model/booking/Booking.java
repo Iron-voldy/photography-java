@@ -37,6 +37,7 @@ public class Booking implements Serializable {
     public Booking() {
         this.bookingId = UUID.randomUUID().toString();
         this.status = BookingStatus.PENDING;
+        this.bookingDateTime = LocalDateTime.now();
     }
 
     public Booking(String clientId, String photographerId, String serviceId,
@@ -145,40 +146,82 @@ public class Booking implements Serializable {
 
     // Convert booking to file string representation
     public String toFileString() {
-        return String.join(",",
-                bookingId,
-                clientId,
-                photographerId,
-                serviceId,
-                bookingDateTime.toString(),
-                eventDateTime.toString(),
-                eventLocation,
-                eventNotes != null ? eventNotes : "",
-                eventType.name(),
-                status.name(),
-                String.valueOf(totalPrice)
-        );
+        StringBuilder builder = new StringBuilder();
+        builder.append(bookingId).append(",");
+        builder.append(clientId).append(",");
+        builder.append(photographerId).append(",");
+        builder.append(serviceId != null ? serviceId : "").append(",");
+        builder.append(bookingDateTime != null ? bookingDateTime.toString() : "").append(",");
+        builder.append(eventDateTime != null ? eventDateTime.toString() : "").append(",");
+        builder.append(eventLocation != null ? eventLocation.replaceAll(",", ";;") : "").append(",");
+        builder.append(eventNotes != null ? eventNotes.replaceAll(",", ";;") : "").append(",");
+        builder.append(eventType != null ? eventType.name() : "").append(",");
+        builder.append(status != null ? status.name() : "").append(",");
+        builder.append(String.valueOf(totalPrice));
+
+        return builder.toString();
     }
 
     // Create booking from file string
     public static Booking fromFileString(String fileString) {
         String[] parts = fileString.split(",");
-        if (parts.length >= 11) {
-            Booking booking = new Booking();
-            booking.setBookingId(parts[0]);
-            booking.setClientId(parts[1]);
-            booking.setPhotographerId(parts[2]);
-            booking.setServiceId(parts[3]);
-            booking.setBookingDateTime(LocalDateTime.parse(parts[4]));
-            booking.setEventDateTime(LocalDateTime.parse(parts[5]));
-            booking.setEventLocation(parts[6]);
-            booking.setEventNotes(parts[7].isEmpty() ? null : parts[7]);
-            booking.setEventType(BookingType.valueOf(parts[8]));
-            booking.setStatus(BookingStatus.valueOf(parts[9]));
-            booking.setTotalPrice(Double.parseDouble(parts[10]));
-            return booking;
+        if (parts.length < 9) {
+            // Not enough parts for a valid booking
+            return null;
         }
-        return null;
+
+        try {
+            Booking booking = new Booking();
+
+            int index = 0;
+            booking.setBookingId(parts[index++]);
+            booking.setClientId(parts[index++]);
+            booking.setPhotographerId(parts[index++]);
+
+            String serviceId = parts[index++];
+            if (!serviceId.isEmpty()) {
+                booking.setServiceId(serviceId);
+            }
+
+            String bookingDateTimeStr = parts[index++];
+            if (!bookingDateTimeStr.isEmpty()) {
+                booking.setBookingDateTime(LocalDateTime.parse(bookingDateTimeStr));
+            }
+
+            String eventDateTimeStr = parts[index++];
+            if (!eventDateTimeStr.isEmpty()) {
+                booking.setEventDateTime(LocalDateTime.parse(eventDateTimeStr));
+            }
+
+            String eventLocation = parts[index++];
+            if (!eventLocation.isEmpty()) {
+                booking.setEventLocation(eventLocation.replaceAll(";;", ","));
+            }
+
+            String eventNotes = parts[index++];
+            if (!eventNotes.isEmpty()) {
+                booking.setEventNotes(eventNotes.replaceAll(";;", ","));
+            }
+
+            String eventTypeStr = parts[index++];
+            if (!eventTypeStr.isEmpty()) {
+                booking.setEventType(BookingType.valueOf(eventTypeStr));
+            }
+
+            String statusStr = parts[index++];
+            if (!statusStr.isEmpty()) {
+                booking.setStatus(BookingStatus.valueOf(statusStr));
+            }
+
+            if (index < parts.length) {
+                booking.setTotalPrice(Double.parseDouble(parts[index]));
+            }
+
+            return booking;
+        } catch (Exception e) {
+            System.err.println("Error parsing booking from file: " + e.getMessage());
+            return null;
+        }
     }
 
     @Override

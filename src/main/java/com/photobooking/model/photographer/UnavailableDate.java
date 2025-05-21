@@ -3,12 +3,15 @@ package com.photobooking.model.photographer;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Represents an unavailable date/time for a photographer
  */
 public class UnavailableDate implements Serializable {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(UnavailableDate.class.getName());
 
     private String id;
     private String photographerId;
@@ -100,20 +103,37 @@ public class UnavailableDate implements Serializable {
     }
 
     public static UnavailableDate fromFileString(String fileString) {
-        String[] parts = fileString.split(",");
-        if (parts.length >= 4) {
-            UnavailableDate date = new UnavailableDate();
-            date.setId(parts[0]);
-            date.setPhotographerId(parts[1]);
-            date.setDate(LocalDate.parse(parts[2]));
-            date.setAllDay(Boolean.parseBoolean(parts[3]));
+        try {
+            String[] parts = fileString.split(",");
+            if (parts.length >= 4) {
+                UnavailableDate date = new UnavailableDate();
+                date.setId(parts[0]);
+                date.setPhotographerId(parts[1]);
+                date.setDate(LocalDate.parse(parts[2]));
+                date.setAllDay(Boolean.parseBoolean(parts[3]));
 
-            if (parts.length > 4) date.setStartTime(parts[4].isEmpty() ? null : parts[4]);
-            if (parts.length > 5) date.setEndTime(parts[5].isEmpty() ? null : parts[5]);
-            if (parts.length > 6) date.setReason(parts[6].isEmpty() ? null : parts[6]);
+                if (parts.length > 4) date.setStartTime(parts[4].isEmpty() ? null : parts[4]);
+                if (parts.length > 5) date.setEndTime(parts[5].isEmpty() ? null : parts[5]);
+                if (parts.length > 6) date.setReason(parts[6].isEmpty() ? null : parts[6]);
 
-            return date;
+                return date;
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error parsing date from string: " + fileString, e);
         }
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "UnavailableDate{" +
+                "id='" + id + '\'' +
+                ", photographerId='" + photographerId + '\'' +
+                ", date=" + date +
+                ", allDay=" + allDay +
+                ", startTime='" + startTime + '\'' +
+                ", endTime='" + endTime + '\'' +
+                ", reason='" + reason + '\'' +
+                '}';
     }
 }

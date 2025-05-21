@@ -3,3 +3,5 @@
 4fd933e1-cac4-462c-a25d-6459721c2116,photographer1,20020224Ha@,hasindutwm@gmail.com,photo sinjo,PHOTOGRAPHER,true
 bca48ccf-1b27-4e9a-a859-1a350319e0cc,photographer11,20020224Ha@,hasindut1@gmail.com,photo sinjooo,PHOTOGRAPHER,true
 37f2d3d3-0f2c-4e39-abf5-3fe9b9080394,testman1,20020224Ha@,testman1@gmail.com,test user,CLIENT,true
+7d5a0085-6fa0-4e4e-b5f0-36acf4111fc9,ginura1,20020224Ha@,ginura1@gmail.com,ginura deemantha,CLIENT,true
+7e70f3f5-c1dc-4b4d-a55d-d782db14f57c,newTestuser1,20020224Ha@,testuser111@gmail.com,testUserNew,CLIENT,true

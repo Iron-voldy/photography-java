@@ -60,17 +60,40 @@ public class UnavailableDateManager {
      */
     private boolean saveUnavailableDates() {
         try {
+            // Create a backup of the existing file first
+            if (FileHandler.fileExists(UNAVAILABLE_DATES_FILE)) {
+                FileHandler.copyFile(UNAVAILABLE_DATES_FILE, UNAVAILABLE_DATES_FILE + ".bak");
+            }
+
             // Delete existing file
             FileHandler.deleteFile(UNAVAILABLE_DATES_FILE);
 
+            // Ensure file exists
+            FileHandler.ensureFileExists(UNAVAILABLE_DATES_FILE);
+
             // Write each unavailable date
+            StringBuilder content = new StringBuilder();
             for (UnavailableDate date : unavailableDates) {
-                FileHandler.appendLine(UNAVAILABLE_DATES_FILE, date.toFileString());
+                content.append(date.toFileString()).append(System.lineSeparator());
             }
+
+            boolean result = FileHandler.writeToFile(UNAVAILABLE_DATES_FILE, content.toString(), false);
+
             LOGGER.info("Successfully saved " + unavailableDates.size() + " unavailable dates");
-            return true;
+            return result;
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error saving unavailable dates", e);
+
+            // Try to restore from backup if available
+            try {
+                if (FileHandler.fileExists(UNAVAILABLE_DATES_FILE + ".bak")) {
+                    FileHandler.copyFile(UNAVAILABLE_DATES_FILE + ".bak", UNAVAILABLE_DATES_FILE);
+                    LOGGER.info("Restored from backup after save failure");
+                }
+            } catch (Exception restoreEx) {
+                LOGGER.log(Level.SEVERE, "Failed to restore from backup", restoreEx);
+            }
+
             return false;
         }
     }
@@ -81,12 +104,20 @@ public class UnavailableDateManager {
      * @return true if added successfully, false otherwise
      */
     public boolean addUnavailableDate(UnavailableDate date) {
-        // Check for duplicates
+        if (date == null) {
+            LOGGER.warning("Attempted to add null unavailable date");
+            return false;
+        }
+
+        // Check for duplicates based on photographer ID, date, and time slots
         boolean exists = unavailableDates.stream()
                 .anyMatch(existingDate ->
                         existingDate.getPhotographerId().equals(date.getPhotographerId()) &&
                                 existingDate.getDate().equals(date.getDate()) &&
-                                existingDate.isAllDay() == date.isAllDay()
+                                existingDate.isAllDay() == date.isAllDay() &&
+                                ((existingDate.isAllDay() && date.isAllDay()) ||
+                                        (existingDate.getStartTime() != null && existingDate.getStartTime().equals(date.getStartTime()) &&
+                                                existingDate.getEndTime() != null && existingDate.getEndTime().equals(date.getEndTime())))
                 );
 
         if (exists) {
@@ -104,9 +135,22 @@ public class UnavailableDateManager {
      * @return List of unavailable dates
      */
     public List<UnavailableDate> getUnavailableDatesForPhotographer(String photographerId) {
-        return unavailableDates.stream()
+        if (photographerId == null) {
+            return new ArrayList<>();
+        }
+
+        LOGGER.info("Fetching unavailable dates for photographer ID: " + photographerId);
+
+        // Force reload from file to get the latest data
+        this.unavailableDates = loadUnavailableDates();
+
+        List<UnavailableDate> photographerDates = unavailableDates.stream()
                 .filter(date -> date.getPhotographerId().equals(photographerId))
                 .collect(Collectors.toList());
+
+        LOGGER.info("Found " + photographerDates.size() + " unavailable dates for photographer ID: " + photographerId);
+
+        return photographerDates;
     }
 
     /**
@@ -115,12 +159,22 @@ public class UnavailableDateManager {
      * @return true if removed successfully, false otherwise
      */
     public boolean removeUnavailableDate(String dateId) {
-        boolean removed = unavailableDates.removeIf(date -> date.getId().equals(dateId));
+        if (dateId == null) {
+            LOGGER.warning("Attempted to remove null dateId");
+            return false;
+        }
+
+        int originalSize = unavailableDates.size();
+        unavailableDates.removeIf(date -> date.getId().equals(dateId));
+
+        boolean removed = unavailableDates.size() < originalSize;
 
         if (removed) {
+            LOGGER.info("Removed unavailable date with ID: " + dateId);
             return saveUnavailableDates();
         }
 
+        LOGGER.warning("Failed to remove unavailable date with ID: " + dateId);
         return false;
     }
 
@@ -131,11 +185,64 @@ public class UnavailableDateManager {
      * @return true if date is unavailable, false otherwise
      */
     public boolean isDateUnavailable(String photographerId, LocalDate date) {
+        if (photographerId == null || date == null) {
+            return false;
+        }
+
         return unavailableDates.stream()
                 .anyMatch(ud ->
                         ud.getPhotographerId().equals(photographerId) &&
                                 ud.getDate().equals(date) &&
                                 ud.isAllDay()
                 );
+    }
+
+    /**
+     * Get all time slots that are unavailable for a specific date
+     * @param photographerId Photographer's ID
+     * @param date Date to check
+     * @return List of unavailable time slots (in format "HH:MM")
+     */
+    public List<String> getUnavailableTimeSlots(String photographerId, LocalDate date) {
+        if (photographerId == null || date == null) {
+            return new ArrayList<>();
+        }
+
+        List<String> unavailableSlots = new ArrayList<>();
+
+        // First check if the entire day is blocked
+        if (isDateUnavailable(photographerId, date)) {
+            // Add all standard time slots if the day is fully blocked
+            unavailableSlots.add("09:00");
+            unavailableSlots.add("10:00");
+            unavailableSlots.add("11:00");
+            unavailableSlots.add("12:00");
+            unavailableSlots.add("13:00");
+            unavailableSlots.add("14:00");
+            unavailableSlots.add("15:00");
+            unavailableSlots.add("16:00");
+            unavailableSlots.add("17:00");
+            unavailableSlots.add("18:00");
+            unavailableSlots.add("19:00");
+            unavailableSlots.add("20:00");
+            return unavailableSlots;
+        }
+
+        // Then check for specific time slot blocks
+        for (UnavailableDate ud : unavailableDates) {
+            if (ud.getPhotographerId().equals(photographerId) &&
+                    ud.getDate().equals(date) &&
+                    !ud.isAllDay() &&
+                    ud.getStartTime() != null) {
+
+                String startTime = ud.getStartTime();
+                // Only add the start time if it's in our standard format (HH:MM)
+                if (startTime.matches("\\d{2}:\\d{2}")) {
+                    unavailableSlots.add(startTime);
+                }
+            }
+        }
+
+        return unavailableSlots;
     }
 }

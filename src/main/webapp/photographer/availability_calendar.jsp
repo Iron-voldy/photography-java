@@ -324,22 +324,23 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="blockDatesForm">
+                    <!-- Using a proper form element instead of a div -->
+                    <form id="blockDatesForm" onsubmit="return false;">
                         <div class="mb-3">
-                            <label class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="blockStartDate" required>
+                            <label for="blockStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="blockStartDate" name="startDate" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">End Date (Optional)</label>
-                            <input type="date" class="form-control" id="blockEndDate">
+                            <label for="blockEndDate" class="form-label">End Date (Optional)</label>
+                            <input type="date" class="form-control" id="blockEndDate" name="endDate">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Reason (Optional)</label>
-                            <input type="text" class="form-control" id="blockReason" placeholder="Holiday, Personal, etc.">
+                            <label for="blockReason" class="form-label">Reason (Optional)</label>
+                            <input type="text" class="form-control" id="blockReason" name="reason" placeholder="Holiday, Personal, etc.">
                         </div>
                         <div class="form-check mb-3">
-                            <input type="checkbox" class="form-check-input" id="blockAllDay" checked>
-                            <label class="form-check-label">Block Entire Day</label>
+                            <input type="checkbox" class="form-check-input" id="blockAllDay" name="allDay" checked>
+                            <label class="form-check-label" for="blockAllDay">Block Entire Day</label>
                         </div>
                     </form>
                 </div>
@@ -393,6 +394,10 @@
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,listWeek'
                 },
+                dateClick: function(info) {
+                    // Clear previous selections and show time slots
+                    selectDate(info.dateStr);
+                },
                 eventClick: function(info) {
                     // Handle event clicks to show details
                     const event = info.event;
@@ -410,9 +415,6 @@
                         showUnavailableDateDetails(event);
                     }
                 },
-                dateClick: function(info) {
-                    selectDate(info.dateStr);
-                },
                 eventTimeFormat: {
                     hour: 'numeric',
                     minute: '2-digit',
@@ -421,18 +423,22 @@
             });
             calendar.render();
 
-            // Date Selection
+            // Date Selection and Time Slot Management
             function selectDate(dateStr) {
                 const timeSlots = document.getElementById('timeSlots');
                 const selectedDateTitle = document.getElementById('selectedDateTitle');
+                const timeSlotsContainer = document.querySelector('.time-slots-container');
 
-                selectedDateTitle.textContent = new Date(dateStr).toLocaleDateString('en-US', {
+                // Set the date title
+                const selectedDate = new Date(dateStr);
+                selectedDateTitle.textContent = selectedDate.toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
                 });
 
+                // Show the time slots panel
                 timeSlots.style.display = 'block';
 
                 // Reset time slots
@@ -441,35 +447,90 @@
                     slot.style.pointerEvents = '';
                 });
 
-                // Check if this date has any bookings or blocked periods
-                const events = calendar.getEvents();
-                for (let event of events) {
-                    // Check if the event is on the selected date
-                    const eventStart = new Date(event.start);
-                    const selectedDate = new Date(dateStr);
+                // Load availability for the selected date
+                fetchAvailability(dateStr);
+            }
 
-                    if (eventStart.toDateString() === selectedDate.toDateString()) {
-                        // If it's an all-day event or unavailable date, disable all time slots
-                        if (event.allDay && event.id && event.id.startsWith('unavailable-')) {
-                            document.querySelectorAll('.time-slot').forEach(slot => {
-                                slot.classList.add('selected');
-                                slot.style.pointerEvents = 'none';
-                            });
-                            // Add message
-                            selectedDateTitle.textContent += " (Fully Blocked)";
-                            break;
+            // Fetch availability from server
+            function fetchAvailability(dateStr) {
+                // Show loading indicator
+                const timeSlotsContainer = document.querySelector('.time-slots-container');
+                timeSlotsContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading availability...</p></div>';
+
+                // Fetch availability data
+                fetch('${pageContext.request.contextPath}/photographer/get-availability?date=' + dateStr)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateTimeSlotsUI(data, dateStr);
+                        } else {
+                            // Show error
+                            timeSlotsContainer.innerHTML = `<div class="alert alert-danger">${data.message || 'Failed to load availability'}</div>`;
                         }
-                        // If it's a booking that takes specific time slots
-                        else if (!event.allDay) {
-                            // Get the event time and mark those slots as unavailable
-                            const eventHour = eventStart.getHours();
-                            const eventSlot = document.querySelector(`.time-slot[data-time="${eventHour.toString().padStart(2, '0')}:00"]`);
-                            if (eventSlot) {
-                                eventSlot.classList.add('selected');
-                                eventSlot.style.pointerEvents = 'none';
-                            }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching availability:', error);
+                        timeSlotsContainer.innerHTML = '<div class="alert alert-danger">An error occurred while loading availability.</div>';
+                    });
+            }
+
+            // Update time slots UI based on availability data
+            function updateTimeSlotsUI(data, dateStr) {
+                const timeSlotsContainer = document.querySelector('.time-slots-container');
+                const selectedDateTitle = document.getElementById('selectedDateTitle');
+
+                // Restore the original time slots
+                timeSlotsContainer.innerHTML = '';
+
+                // Standard time slots
+                const timeSlots = [
+                    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
+                    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
+                ];
+
+                // Check if date is fully blocked
+                if (data.isFullyBlocked) {
+                    timeSlots.forEach(slot => {
+                        const timeSlotEl = document.createElement('div');
+                        timeSlotEl.className = 'time-slot selected';
+                        timeSlotEl.setAttribute('data-time', slot);
+                        timeSlotEl.style.pointerEvents = 'none';
+
+                        // Format time for display (12-hour format)
+                        const hour = parseInt(slot.split(':')[0]);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const hour12 = hour % 12 || 12;
+
+                        timeSlotEl.textContent = `${hour12}:00 ${ampm}`;
+                        timeSlotsContainer.appendChild(timeSlotEl);
+                    });
+
+                    selectedDateTitle.textContent += " (Fully Blocked)";
+                } else {
+                    // Create time slots with appropriate states
+                    timeSlots.forEach(slot => {
+                        const timeSlotEl = document.createElement('div');
+                        timeSlotEl.className = 'time-slot';
+                        timeSlotEl.setAttribute('data-time', slot);
+
+                        // Check if this slot is unavailable
+                        if (data.unavailableTimeSlots && data.unavailableTimeSlots.includes(slot)) {
+                            timeSlotEl.classList.add('selected');
                         }
-                    }
+
+                        // Format time for display (12-hour format)
+                        const hour = parseInt(slot.split(':')[0]);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const hour12 = hour % 12 || 12;
+
+                        timeSlotEl.textContent = `${hour12}:00 ${ampm}`;
+                        timeSlotsContainer.appendChild(timeSlotEl);
+
+                        // Add click event
+                        timeSlotEl.addEventListener('click', function() {
+                            this.classList.toggle('selected');
+                        });
+                    });
                 }
             }
 
@@ -572,12 +633,17 @@
                         minute: '2-digit',
                         hour12: true
                     });
-                    const endTime = endDate.toLocaleTimeString('en-US', {
+                    const endTime = endDate ? endDate.toLocaleTimeString('en-US', {
                         hour: 'numeric',
                         minute: '2-digit',
                         hour12: true
-                    });
-                    detailsHtml += `<p><strong>Time:</strong> ${startTime} - ${endTime}</p>`;
+                    }) : '';
+
+                    if (endTime) {
+                        detailsHtml += `<p><strong>Time:</strong> ${startTime} - ${endTime}</p>`;
+                    } else {
+                        detailsHtml += `<p><strong>Time:</strong> ${startTime}</p>`;
+                    }
                 }
 
                 body.innerHTML = detailsHtml;
@@ -590,25 +656,29 @@
                 modal.show();
             }
 
-            // Time Slot Selection
-            document.querySelectorAll('.time-slot').forEach(slot => {
-                slot.addEventListener('click', function() {
-                    if (this.style.pointerEvents !== 'none') {
-                        this.classList.toggle('selected');
-                    }
-                });
-            });
-
             // Save Availability
             document.getElementById('saveAvailability').addEventListener('click', function() {
                 const selectedDateText = document.getElementById('selectedDateTitle').textContent;
                 const dateMatch = selectedDateText.match(/([A-Za-z]+, [A-Za-z]+ \d+, \d+)/);
-                const selectedDate = dateMatch ? new Date(dateMatch[0]) : new Date();
-                const dateStr = selectedDate.toISOString().split('T')[0];
 
-                const selectedTimeSlots = Array.from(
+                if (!dateMatch) {
+                    alert('Error: Invalid date format');
+                    return;
+                }
+
+                const selectedDate = new Date(dateMatch[0]);
+                const dateStr = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+                // Get all selected (unavailable) time slots
+                const unavailableTimeSlots = Array.from(
                     document.querySelectorAll('.time-slot.selected')
                 ).map(slot => slot.getAttribute('data-time'));
+
+                // Disable the save button and show loading state
+                const saveButton = document.getElementById('saveAvailability');
+                const originalButtonText = saveButton.innerHTML;
+                saveButton.disabled = true;
+                saveButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
 
                 // Call backend to save availability
                 fetch('${pageContext.request.contextPath}/photographer/save-availability', {
@@ -618,22 +688,34 @@
                     },
                     body: JSON.stringify({
                         date: dateStr,
-                        unavailableTimeSlots: selectedTimeSlots
+                        unavailableTimeSlots: unavailableTimeSlots
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Refresh calendar
-                        window.location.reload();
-                        alert('Availability saved successfully!');
+                        // Show success message
+                        const saveMessage = document.createElement('div');
+                        saveMessage.className = 'alert alert-success mt-3';
+                        saveMessage.innerHTML = '<i class="bi bi-check-circle me-2"></i>Availability saved successfully!';
+                        document.getElementById('timeSlots').appendChild(saveMessage);
+
+                        // Refresh calendar after a short delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
                     } else {
+                        // Show error message
                         alert('Error: ' + (data.message || 'Failed to save availability'));
+                        saveButton.disabled = false;
+                        saveButton.innerHTML = originalButtonText;
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     alert('An error occurred while saving availability.');
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = originalButtonText;
                 });
             });
 
@@ -649,39 +731,97 @@
                     return;
                 }
 
-                // Debug
+                // Debug log
                 console.log('Block Dates Form Data:');
                 console.log('Start Date:', startDate);
                 console.log('End Date:', endDate);
                 console.log('All Day:', blockAllDay);
                 console.log('Reason:', blockReason);
 
-                // Prepare form data
-                const formData = new FormData();
-                formData.append('startDate', startDate);
-                if (endDate) formData.append('endDate', endDate);
-                if (blockAllDay) formData.append('allDay', 'on');
-                formData.append('reason', blockReason);
+                                    // Disable the confirm button and show loading state
+                const confirmButton = document.getElementById('confirmBlockDates');
+                const originalButtonText = confirmButton.innerHTML;
+                confirmButton.disabled = true;
+                confirmButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
 
-                // Call backend to block dates
-                fetch('${pageContext.request.contextPath}/photographer/block-dates', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Refresh page to update calendar
-                        window.location.reload();
-                        alert('Dates blocked successfully!');
+                // Log the form data for debugging
+                console.log('Form data being sent:');
+                console.log('startDate:', startDate);
+                console.log('endDate:', endDate);
+                console.log('blockAllDay:', blockAllDay);
+                console.log('blockReason:', blockReason);
+
+                // Call backend to block dates - using XMLHttpRequest for better form data handling
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '${pageContext.request.contextPath}/photographer/block-dates', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+                // Prepare the data in URL-encoded format
+                let formData = 'startDate=' + encodeURIComponent(startDate);
+                if (endDate) formData += '&endDate=' + encodeURIComponent(endDate);
+                if (blockAllDay) formData += '&allDay=on';
+                formData += '&reason=' + encodeURIComponent(blockReason);
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        let response;
+                        try {
+                            response = JSON.parse(xhr.responseText);
+                        } catch (e) {
+                            console.error('Error parsing JSON response:', e);
+                            alert('Error: Invalid response from server');
+                            confirmButton.disabled = false;
+                            confirmButton.innerHTML = originalButtonText;
+                            return;
+                        }
+
+                        if (response.success) {
+                            // Close modal
+                            const blockDatesModal = bootstrap.Modal.getInstance(document.getElementById('blockDatesModal'));
+                            blockDatesModal.hide();
+
+                            // Create success alert
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                            alertDiv.innerHTML = `
+                                <i class="bi bi-check-circle me-2"></i> ${response.message || 'Dates blocked successfully!'}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            `;
+
+                            // Add alert at the top of the container
+                            const container = document.querySelector('.container');
+                            container.insertBefore(alertDiv, container.firstChild);
+
+                            // Refresh calendar after a short delay
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            // Show error message
+                            alert('Error: ' + (response.message || 'Failed to block dates'));
+                            confirmButton.disabled = false;
+                            confirmButton.innerHTML = originalButtonText;
+                        }
                     } else {
-                        alert('Error: ' + (data.message || 'Failed to block dates'));
+                        console.error('HTTP Error:', xhr.status, xhr.statusText);
+                        alert('Error: Server returned status ' + xhr.status);
+                        confirmButton.disabled = false;
+                        confirmButton.innerHTML = originalButtonText;
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while blocking dates.');
-                });
+                };
+
+                xhr.onerror = function() {
+                    console.error('Network Error');
+                    alert('Network error. Please check your connection and try again.');
+                    confirmButton.disabled = false;
+                    confirmButton.innerHTML = originalButtonText;
+                };
+
+                // Send the request
+                xhr.send(formData);
+
+                // Log for debugging
+                console.log('Sending form data:', formData);
             });
 
             // Remove Blocked Date
@@ -691,6 +831,12 @@
                     if (!dateId) return;
 
                     if (confirm('Are you sure you want to remove this blocked date?')) {
+                        // Disable the button and show loading state
+                        const removeButton = this;
+                        const originalButtonHtml = removeButton.innerHTML;
+                        removeButton.disabled = true;
+                        removeButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
                         // Call backend to remove blocked date
                         fetch('${pageContext.request.contextPath}/photographer/remove-blocked-date', {
                             method: 'POST',
@@ -702,17 +848,43 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                // Refresh page to update calendar
-                                window.location.reload();
-                                alert('Blocked date removed successfully!');
+                                // Find the parent card and remove it with animation
+                                const card = removeButton.closest('.card');
+                                card.style.transition = 'all 0.3s ease';
+                                card.style.opacity = '0';
+                                card.style.transform = 'translateX(20px)';
+
+                                setTimeout(() => {
+                                    card.remove();
+
+                                    // If no more dates, show empty message
+                                    const datesList = document.getElementById('unavailableDatesList');
+                                    if (datesList.querySelector('.card') === null) {
+                                        datesList.innerHTML = `
+                                            <div class="text-center text-muted">
+                                                <i class="bi bi-calendar-check fs-1 mb-3"></i>
+                                                <p>No blocked dates</p>
+                                            </div>
+                                        `;
+                                    }
+
+                                    // Refresh calendar
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 500);
+                                }, 300);
                             } else {
+                                // Show error
                                 alert('Error: ' + (data.message || 'Failed to remove blocked date'));
+                                removeButton.disabled = false;
+                                removeButton.innerHTML = originalButtonHtml;
                             }
                         })
-})
                         .catch(error => {
                             console.error('Error:', error);
                             alert('An error occurred while removing blocked date.');
+                            removeButton.disabled = false;
+                            removeButton.innerHTML = originalButtonHtml;
                         });
                     }
                 });

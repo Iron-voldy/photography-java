@@ -22,6 +22,8 @@ import com.photobooking.model.booking.BookingManager;
 import com.photobooking.model.user.User;
 import com.photobooking.model.photographer.UnavailableDate;
 import com.photobooking.model.photographer.UnavailableDateManager;
+import com.photobooking.model.photographer.Photographer;
+import com.photobooking.model.photographer.PhotographerManager;
 
 /**
  * Servlet for handling photographer availability calendar
@@ -48,7 +50,27 @@ public class PhotographerAvailabilityServlet extends HttpServlet {
             return;
         }
 
-        String photographerId = currentUser.getUserId();
+        // Get photographer ID from session or from database
+        String photographerId = (String) session.getAttribute("photographerId");
+
+        // If photographer ID is not in session, try to get it from the database
+        if (photographerId == null) {
+            try {
+                PhotographerManager photographerManager = new PhotographerManager(getServletContext());
+                Photographer photographer = photographerManager.getPhotographerByUserId(currentUser.getUserId());
+
+                if (photographer != null) {
+                    photographerId = photographer.getPhotographerId();
+                    session.setAttribute("photographerId", photographerId);
+                } else {
+                    // If still no photographer ID, use user ID
+                    photographerId = currentUser.getUserId();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                photographerId = currentUser.getUserId(); // Fallback to user ID
+            }
+        }
 
         // For debugging
         System.out.println("Loading calendar for photographer ID: " + photographerId);

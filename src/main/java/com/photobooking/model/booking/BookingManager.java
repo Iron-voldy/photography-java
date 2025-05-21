@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import javax.servlet.ServletContext;
+import java.io.File;
 
 /**
  * Manages all booking-related operations for the Event Photography System
@@ -107,6 +108,7 @@ public class BookingManager {
     public boolean createBooking(Booking booking) {
         // Basic validation
         if (booking == null || booking.getClientId() == null || booking.getPhotographerId() == null) {
+            LOGGER.warning("Invalid booking data: booking is null or missing required fields");
             return false;
         }
 
@@ -120,9 +122,20 @@ public class BookingManager {
             booking.setStatus(Booking.BookingStatus.PENDING);
         }
 
+        // Debug log
+        LOGGER.info("Creating booking: " + booking.toString());
+
         // Add to list and save
         bookings.add(booking);
-        return saveBookings();
+        boolean saved = saveBookings();
+
+        if (saved) {
+            LOGGER.info("Booking created successfully with ID: " + booking.getBookingId());
+        } else {
+            LOGGER.warning("Failed to save booking with ID: " + booking.getBookingId());
+        }
+
+        return saved;
     }
 
     /**

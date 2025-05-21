@@ -14,6 +14,8 @@ import javax.servlet.http.HttpSession;
 
 import com.photobooking.model.photographer.UnavailableDate;
 import com.photobooking.model.photographer.UnavailableDateManager;
+import com.photobooking.model.photographer.Photographer;
+import com.photobooking.model.photographer.PhotographerManager;
 import com.photobooking.model.user.User;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -80,6 +82,21 @@ public class SaveAvailabilityServlet extends HttpServlet {
             System.out.println("date: " + dateStr);
             System.out.println("unavailableTimeSlots: " + unavailableTimeSlotsJson);
 
+            // Get photographerId (first try session, then database)
+            String photographerId = (String) session.getAttribute("photographerId");
+            if (photographerId == null) {
+                // Try to get photographer from database
+                PhotographerManager photographerManager = new PhotographerManager(getServletContext());
+                Photographer photographer = photographerManager.getPhotographerByUserId(currentUser.getUserId());
+                if (photographer != null) {
+                    photographerId = photographer.getPhotographerId();
+                    session.setAttribute("photographerId", photographerId);
+                } else {
+                    // If still no photographer ID, use user ID
+                    photographerId = currentUser.getUserId();
+                }
+            }
+
             // Convert to Java objects
             LocalDate date = LocalDate.parse(dateStr);
             List<String> unavailableTimeSlots = new ArrayList<>();
@@ -87,19 +104,33 @@ public class SaveAvailabilityServlet extends HttpServlet {
                 unavailableTimeSlots.add(unavailableTimeSlotsJson.get(i).getAsString());
             }
 
-            String photographerId = currentUser.getUserId();
             UnavailableDateManager unavailableDateManager = new UnavailableDateManager();
+
+            // First, remove any existing time-specific unavailability for this date
+            // (we'll keep all-day blocks though)
+            List<UnavailableDate> existingDates = unavailableDateManager.getUnavailableDatesForPhotographer(photographerId);
+            for (UnavailableDate existingDate : existingDates) {
+                if (existingDate.getDate().equals(date) && !existingDate.isAllDay()) {
+                    unavailableDateManager.removeUnavailableDate(existingDate.getId());
+                }
+            }
 
             // If all time slots (12) are blocked, create an all-day unavailable date
             if (unavailableTimeSlots.size() == 12) {
-                UnavailableDate allDayUnavailable = new UnavailableDate(
-                        photographerId,
-                        date,
-                        true,
-                        "Blocked entire day"
-                );
-                unavailableDateManager.addUnavailableDate(allDayUnavailable);
-            } else {
+                // First check if an all-day block already exists
+                boolean allDayBlockExists = existingDates.stream()
+                        .anyMatch(uDate -> uDate.getDate().equals(date) && uDate.isAllDay());
+
+                if (!allDayBlockExists) {
+                    UnavailableDate allDayUnavailable = new UnavailableDate(
+                            photographerId,
+                            date,
+                            true,
+                            "Blocked entire day"
+                    );
+                    unavailableDateManager.addUnavailableDate(allDayUnavailable);
+                }
+            } else if (!unavailableTimeSlots.isEmpty()) {
                 // Block individual time slots
                 for (String timeSlot : unavailableTimeSlots) {
                     // Calculate end time (1 hour after start time)

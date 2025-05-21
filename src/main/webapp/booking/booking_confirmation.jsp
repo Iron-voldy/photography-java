@@ -1,6 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="com.photobooking.model.booking.Booking" %>
+<%@ page import="com.photobooking.model.photographer.Photographer" %>
+<%@ page import="com.photobooking.model.photographer.PhotographerService" %>
+<%@ page import="com.photobooking.model.photographer.PhotographerManager" %>
+<%@ page import="com.photobooking.model.photographer.PhotographerServiceManager" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,6 +81,36 @@
     <!-- Include Header -->
     <jsp:include page="/includes/header.jsp" />
 
+    <%
+    // Get the booking information from the session
+    Booking booking = (Booking) session.getAttribute("booking");
+    Photographer photographer = (Photographer) session.getAttribute("photographer");
+    PhotographerService service = (PhotographerService) session.getAttribute("service");
+
+    // If booking is not found in session, try to recover
+    if (booking == null && request.getParameter("id") != null) {
+        String bookingId = request.getParameter("id");
+        com.photobooking.model.booking.BookingManager bookingManager =
+            new com.photobooking.model.booking.BookingManager(application);
+        booking = bookingManager.getBookingById(bookingId);
+
+        if (booking != null) {
+            PhotographerManager photographerManager = new PhotographerManager(application);
+            photographer = photographerManager.getPhotographerByUserId(booking.getPhotographerId());
+
+            if (booking.getServiceId() != null) {
+                PhotographerServiceManager serviceManager = new PhotographerServiceManager(application);
+                service = serviceManager.getServiceById(booking.getServiceId());
+            }
+        }
+    }
+
+    // Set attributes for JSP to use
+    request.setAttribute("booking", booking);
+    request.setAttribute("photographer", photographer);
+    request.setAttribute("service", service);
+    %>
+
     <!-- Confirmation Header -->
     <div class="confirmation-header">
         <div class="container">
@@ -88,134 +123,165 @@
         <!-- Include Messages -->
         <jsp:include page="/includes/messages.jsp" />
 
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="confirmation-card text-center">
-                    <div class="success-badge">CONFIRMED</div>
-                    <div class="confirmation-icon">
-                        <i class="bi bi-check-circle"></i>
-                    </div>
-                    <h2 class="mb-4">Thank You for Your Booking!</h2>
-                    <p class="mb-4">Your booking has been confirmed and the photographer has been notified. You'll receive an email confirmation shortly with all the details.</p>
+        <c:choose>
+            <c:when test="${not empty booking}">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="confirmation-card text-center">
+                            <div class="success-badge">CONFIRMED</div>
+                            <div class="confirmation-icon">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <h2 class="mb-4">Thank You for Your Booking!</h2>
+                            <p class="mb-4">Your booking has been confirmed and the photographer has been notified. You'll receive an email confirmation shortly with all the details.</p>
 
-                    <div class="booking-details text-start">
-                        <h4 class="mb-4">Booking Details</h4>
+                            <div class="booking-details text-start">
+                                <h4 class="mb-4">Booking Details</h4>
 
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Booking ID:</div>
-                            <div class="col-md-8">${booking.bookingId}</div>
-                        </div>
+                                <div class="row detail-row">
+                                    <div class="col-md-4 detail-label">Booking ID:</div>
+                                    <div class="col-md-8">${booking.bookingId}</div>
+                                </div>
 
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Photographer:</div>
-                            <div class="col-md-8">${photographer.businessName}</div>
-                        </div>
+                                <div class="row detail-row">
+                                    <div class="col-md-4 detail-label">Photographer:</div>
+                                    <div class="col-md-8">${photographer.businessName}</div>
+                                </div>
 
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Service Package:</div>
-                            <div class="col-md-8">${service.name}</div>
-                        </div>
+                                <c:if test="${not empty service}">
+                                    <div class="row detail-row">
+                                        <div class="col-md-4 detail-label">Service Package:</div>
+                                        <div class="col-md-8">${service.name}</div>
+                                    </div>
+                                </c:if>
 
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Event Date:</div>
-                            <div class="col-md-8">
-                                <fmt:parseDate value="${booking.eventDateTime}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedDate" />
-                                <fmt:formatDate value="${parsedDate}" pattern="MMMM d, yyyy" />
+                                <div class="row detail-row">
+                                    <div class="col-md-4 detail-label">Event Date:</div>
+                                    <div class="col-md-8">
+                                        <fmt:parseDate value="${booking.eventDateTime}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedDate" />
+                                        <fmt:formatDate value="${parsedDate}" pattern="MMMM d, yyyy" />
+                                    </div>
+                                </div>
+
+                                <div class="row detail-row">
+                                    <div class="col-md-4 detail-label">Time:</div>
+                                    <div class="col-md-8">
+                                        <fmt:parseDate value="${booking.eventDateTime}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedTime" />
+                                        <fmt:formatDate value="${parsedTime}" pattern="h:mm a" />
+                                    </div>
+                                </div>
+
+                                <div class="row detail-row">
+                                    <div class="col-md-4 detail-label">Location:</div>
+                                    <div class="col-md-8">${booking.eventLocation}</div>
+                                </div>
+
+                                <div class="row detail-row">
+                                    <div class="col-md-4 detail-label">Event Type:</div>
+                                    <div class="col-md-8">${booking.eventType}</div>
+                                </div>
+
+                                <div class="row detail-row">
+                                    <div class="col-md-4 detail-label">Total Price:</div>
+                                    <div class="col-md-8">$${booking.totalPrice}</div>
+                                </div>
+                            </div>
+
+                            <p class="mb-4">If you need to make any changes or have questions about your booking, please contact the photographer directly or visit your bookings page.</p>
+
+                            <div class="d-grid gap-3 d-md-flex justify-content-md-center mt-5">
+                                <a href="${pageContext.request.contextPath}/booking/list" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-list me-2"></i>View All Bookings
+                                </a>
+                                <a href="${pageContext.request.contextPath}/user/dashboard.jsp" class="btn btn-outline-primary btn-lg">
+                                    <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+                                </a>
                             </div>
                         </div>
 
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Time:</div>
-                            <div class="col-md-8">
-                                <fmt:parseDate value="${booking.eventDateTime}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedTime" />
-                                <fmt:formatDate value="${parsedTime}" pattern="h:mm a" />
+                        <!-- What's Next Card -->
+                        <div class="confirmation-card">
+                            <h3 class="mb-4">What's Next?</h3>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3 text-primary">
+                                            <i class="bi bi-envelope-check fs-3"></i>
+                                        </div>
+                                        <div>
+                                            <h5>Check Your Email</h5>
+                                            <p>You'll receive a detailed confirmation email with all the information about your booking.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3 text-primary">
+                                            <i class="bi bi-chat-dots fs-3"></i>
+                                        </div>
+                                        <div>
+                                            <h5>Photographer Contact</h5>
+                                            <p>The photographer may reach out to discuss specific details about your session.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3 text-primary">
+                                            <i class="bi bi-calendar-check fs-3"></i>
+                                        </div>
+                                        <div>
+                                            <h5>Prepare for Your Session</h5>
+                                            <p>Plan outfits, locations, and any specific shots you'd like to capture during your session.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3 text-primary">
+                                            <i class="bi bi-clock-history fs-3"></i>
+                                        </div>
+                                        <div>
+                                            <h5>Day of Your Event</h5>
+                                            <p>The photographer will arrive at the scheduled time and location ready to capture your special moments.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Location:</div>
-                            <div class="col-md-8">${booking.eventLocation}</div>
-                        </div>
-
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Event Type:</div>
-                            <div class="col-md-8">${booking.eventType}</div>
-                        </div>
-
-                        <div class="row detail-row">
-                            <div class="col-md-4 detail-label">Total Price:</div>
-                            <div class="col-md-8">$${booking.totalPrice}</div>
-                        </div>
-                    </div>
-
-                    <p class="mb-4">If you need to make any changes or have questions about your booking, please contact the photographer directly or visit your bookings page.</p>
-
-                    <div class="d-grid gap-3 d-md-flex justify-content-md-center mt-5">
-                        <a href="${pageContext.request.contextPath}/booking/list" class="btn btn-primary btn-lg">
-                            <i class="bi bi-list me-2"></i>View All Bookings
-                        </a>
-                        <a href="${pageContext.request.contextPath}/user/dashboard.jsp" class="btn btn-outline-primary btn-lg">
-                            <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
-                        </a>
                     </div>
                 </div>
-
-                <!-- What's Next Card -->
-                <div class="confirmation-card">
-                    <h3 class="mb-4">What's Next?</h3>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-4">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0 me-3 text-primary">
-                                    <i class="bi bi-envelope-check fs-3"></i>
-                                </div>
-                                <div>
-                                    <h5>Check Your Email</h5>
-                                    <p>You'll receive a detailed confirmation email with all the information about your booking.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0 me-3 text-primary">
-                                    <i class="bi bi-chat-dots fs-3"></i>
-                                </div>
-                                <div>
-                                    <h5>Photographer Contact</h5>
-                                    <p>The photographer may reach out to discuss specific details about your session.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0 me-3 text-primary">
-                                    <i class="bi bi-calendar-check fs-3"></i>
-                                </div>
-                                <div>
-                                    <h5>Prepare for Your Session</h5>
-                                    <p>Plan outfits, locations, and any specific shots you'd like to capture during your session.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0 me-3 text-primary">
-                                    <i class="bi bi-clock-history fs-3"></i>
-                                </div>
-                                <div>
-                                    <h5>Day of Your Event</h5>
-                                    <p>The photographer will arrive at the scheduled time and location ready to capture your special moments.</p>
-                                </div>
+            </c:when>
+            <c:otherwise>
+                <!-- No booking information found -->
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="alert alert-warning">
+                            <h4><i class="bi bi-exclamation-triangle me-2"></i>Booking Information Not Found</h4>
+                            <p>Sorry, we couldn't find details for your booking. This could be due to one of the following reasons:</p>
+                            <ul>
+                                <li>The booking session has expired</li>
+                                <li>There was an error processing your booking</li>
+                                <li>You may have refreshed or navigated away from the page during booking confirmation</li>
+                            </ul>
+                            <p>Please check your bookings list to verify if your booking was created, or try making a new booking.</p>
+                            <div class="mt-4">
+                                <a href="${pageContext.request.contextPath}/booking/list" class="btn btn-primary">
+                                    <i class="bi bi-list me-2"></i>View My Bookings
+                                </a>
+                                <a href="${pageContext.request.contextPath}/booking/booking_form.jsp" class="btn btn-outline-primary ms-2">
+                                    <i class="bi bi-calendar-plus me-2"></i>Create New Booking
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </c:otherwise>
+        </c:choose>
     </div>
 
     <!-- Include Footer -->
