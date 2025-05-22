@@ -474,7 +474,7 @@
                     });
             }
 
-            // Update time slots UI based on availability data
+            // Update time slots UI based on availability data - FIXED VERSION
             function updateTimeSlotsUI(data, dateStr) {
                 const timeSlotsContainer = document.querySelector('.time-slots-container');
                 const selectedDateTitle = document.getElementById('selectedDateTitle');
@@ -482,10 +482,20 @@
                 // Restore the original time slots
                 timeSlotsContainer.innerHTML = '';
 
-                // Standard time slots
+                // Standard time slots with proper formatting
                 const timeSlots = [
-                    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
-                    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
+                    { time: '09:00', display: '9:00 AM' },
+                    { time: '10:00', display: '10:00 AM' },
+                    { time: '11:00', display: '11:00 AM' },
+                    { time: '12:00', display: '12:00 PM' },
+                    { time: '13:00', display: '1:00 PM' },
+                    { time: '14:00', display: '2:00 PM' },
+                    { time: '15:00', display: '3:00 PM' },
+                    { time: '16:00', display: '4:00 PM' },
+                    { time: '17:00', display: '5:00 PM' },
+                    { time: '18:00', display: '6:00 PM' },
+                    { time: '19:00', display: '7:00 PM' },
+                    { time: '20:00', display: '8:00 PM' }
                 ];
 
                 // Check if date is fully blocked
@@ -493,15 +503,9 @@
                     timeSlots.forEach(slot => {
                         const timeSlotEl = document.createElement('div');
                         timeSlotEl.className = 'time-slot selected';
-                        timeSlotEl.setAttribute('data-time', slot);
+                        timeSlotEl.setAttribute('data-time', slot.time);
                         timeSlotEl.style.pointerEvents = 'none';
-
-                        // Format time for display (12-hour format)
-                        const hour = parseInt(slot.split(':')[0]);
-                        const ampm = hour >= 12 ? 'PM' : 'AM';
-                        const hour12 = hour % 12 || 12;
-
-                        timeSlotEl.textContent = `${hour12}:00 ${ampm}`;
+                        timeSlotEl.textContent = slot.display;
                         timeSlotsContainer.appendChild(timeSlotEl);
                     });
 
@@ -511,19 +515,14 @@
                     timeSlots.forEach(slot => {
                         const timeSlotEl = document.createElement('div');
                         timeSlotEl.className = 'time-slot';
-                        timeSlotEl.setAttribute('data-time', slot);
+                        timeSlotEl.setAttribute('data-time', slot.time);
 
                         // Check if this slot is unavailable
-                        if (data.unavailableTimeSlots && data.unavailableTimeSlots.includes(slot)) {
+                        if (data.unavailableTimeSlots && data.unavailableTimeSlots.includes(slot.time)) {
                             timeSlotEl.classList.add('selected');
                         }
 
-                        // Format time for display (12-hour format)
-                        const hour = parseInt(slot.split(':')[0]);
-                        const ampm = hour >= 12 ? 'PM' : 'AM';
-                        const hour12 = hour % 12 || 12;
-
-                        timeSlotEl.textContent = `${hour12}:00 ${ampm}`;
+                        timeSlotEl.textContent = slot.display;
                         timeSlotsContainer.appendChild(timeSlotEl);
 
                         // Add click event
@@ -738,7 +737,7 @@
                 console.log('All Day:', blockAllDay);
                 console.log('Reason:', blockReason);
 
-                                    // Disable the confirm button and show loading state
+                // Disable the confirm button and show loading state
                 const confirmButton = document.getElementById('confirmBlockDates');
                 const originalButtonText = confirmButton.innerHTML;
                 confirmButton.disabled = true;
