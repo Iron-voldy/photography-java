@@ -5,4 +5,3 @@ fd176c1e-e0f3-46ea-b645-7cfc8ae24f6a,93463ee2-dd00-4c3f-ae26-a78a1caeab94,2025-0
 637014f3-7284-4371-8ffa-759ee5c70be6,93463ee2-dd00-4c3f-ae26-a78a1caeab94,2025-05-21,true,,,Holiday
 1e773b00-aeec-4517-a0e7-0d8cb5f8182a,93463ee2-dd00-4c3f-ae26-a78a1caeab94,2025-05-22,true,,,Holiday
 168dac0d-29c9-47f1-9289-96cade2df7b7,93463ee2-dd00-4c3f-ae26-a78a1caeab94,2025-05-22,false,10:00,11:00,Blocked time slot
-ab8dfd44-4aca-4bc2-af22-1df2027627b6,93463ee2-dd00-4c3f-ae26-a78a1caeab94,2025-05-22,false,17:00,18:00,Blocked time slot
